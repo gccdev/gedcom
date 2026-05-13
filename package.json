@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "import-gedcom": "dotenv -e .env.local -- ts-node --project tsconfig.scripts.json scripts/import-gedcom.ts"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.2",
@@ -30,8 +31,11 @@
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6.0.1",
+    "dotenv-cli": "^11.0.0",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5",
     "vitest": "^4.1.6"
   }
