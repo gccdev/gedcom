@@ -57,11 +57,12 @@ CREATE INDEX IF NOT EXISTS idx_events_individual       ON events(individual_id);
 CREATE INDEX IF NOT EXISTS idx_media_individual        ON media(individual_id);
 
 -- Auth.js v5 tables (pg adapter)
-CREATE TABLE IF NOT EXISTS verification_token (
-  identifier TEXT        NOT NULL,
-  expires    TIMESTAMPTZ NOT NULL,
-  token      TEXT        NOT NULL,
-  PRIMARY KEY (identifier, token)
+CREATE TABLE IF NOT EXISTS users (
+  id              TEXT        NOT NULL PRIMARY KEY,
+  name            TEXT,
+  email           TEXT        UNIQUE,
+  "emailVerified" TIMESTAMPTZ,
+  image           TEXT
 );
 
 CREATE TABLE IF NOT EXISTS accounts (
@@ -86,10 +87,9 @@ CREATE TABLE IF NOT EXISTS sessions (
   "sessionToken" TEXT        NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS users (
-  id              TEXT        NOT NULL PRIMARY KEY,
-  name            TEXT,
-  email           TEXT        UNIQUE,
-  "emailVerified" TIMESTAMPTZ,
-  image           TEXT
+CREATE TABLE IF NOT EXISTS verification_token (
+  identifier TEXT        NOT NULL,
+  expires    TIMESTAMPTZ NOT NULL,
+  token      TEXT        NOT NULL,
+  PRIMARY KEY (identifier, token)
 );
