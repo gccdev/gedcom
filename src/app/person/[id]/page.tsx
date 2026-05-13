@@ -97,8 +97,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
           <div className="bg-white border border-slate-200 rounded-lg px-4">
             <FamilyRow person={father} label="Father" />
             <FamilyRow person={mother} label="Mother" />
-            {signedSpouses.map((s, i) => s && <FamilyRow key={i} person={s} label="Spouse" />)}
-            {signedChildren.map((c, i) => c && <FamilyRow key={i} person={c} label="Child" />)}
+            {signedSpouses.map((s) => s && <FamilyRow key={s.id} person={s} label="Spouse" />)}
+            {signedChildren.map((c) => c && <FamilyRow key={c.id} person={c} label="Child" />)}
           </div>
         </section>
       )}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface MediaItem {
   id: number
@@ -11,6 +11,20 @@ interface MediaItem {
 
 export default function MediaGallery({ items }: { items: MediaItem[] }) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!lightboxUrl) return
+    // Prevent body scroll while lightbox is open
+    document.body.style.overflow = 'hidden'
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxUrl(null)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKey)
+    }
+  }, [lightboxUrl])
 
   if (items.length === 0) return null
 
@@ -49,6 +63,8 @@ export default function MediaGallery({ items }: { items: MediaItem[] }) {
 
       {lightboxUrl && (
         <div
+          role="dialog"
+          aria-modal="true"
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
           onClick={() => setLightboxUrl(null)}
         >
@@ -61,7 +77,7 @@ export default function MediaGallery({ items }: { items: MediaItem[] }) {
           <button
             onClick={() => setLightboxUrl(null)}
             className="absolute top-4 right-4 text-white text-3xl leading-none hover:text-slate-300"
-            aria-label="Close"
+            aria-label="Close lightbox"
           >
             ×
           </button>
