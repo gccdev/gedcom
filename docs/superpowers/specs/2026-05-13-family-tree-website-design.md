@@ -168,7 +168,9 @@ Steps:
 
 ## Media Handling
 
-Media files are referenced by filename in the GEDCOM. The default approach is **Vercel Blob** — the importer uploads each file and stores the resulting Blob URL in `media.filename`. This avoids committing large binary files to the repository and works at any scale. The app constructs image/document URLs directly from the stored Blob URLs at render time.
+Media files are referenced by filename in the GEDCOM. The default approach is **private Vercel Blob** — the importer uploads each file with `access: 'private'` and stores the resulting Blob pathname in `media.filename`. This avoids committing large binary files to the repository and keeps media inaccessible without a valid session.
+
+At render time, the app generates a short-lived signed URL (`generateSignedUrl()`) for each media item. Signed URLs expire after 5 minutes, so a copied URL becomes a 403 shortly after. Only authenticated users ever receive a signed URL.
 
 ---
 
