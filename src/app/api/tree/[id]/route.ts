@@ -1,11 +1,6 @@
 import { auth } from '@auth'
-import { getHourglassData, Individual } from '@/lib/queries'
-import { signBlobUrl } from '@/lib/media'
-
-async function signIndividual(ind: Individual | null): Promise<Individual | null> {
-  if (!ind || !ind.photoBlobUrl) return ind
-  return { ...ind, photoBlobUrl: await signBlobUrl(ind.photoBlobUrl) }
-}
+import { getHourglassData } from '@/lib/queries'
+import { signIndividual } from '@/lib/media'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
