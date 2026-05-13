@@ -1,5 +1,9 @@
-import { neon } from '@neondatabase/serverless'
+import { neon, Pool } from '@neondatabase/serverless'
 
-const sql = neon(process.env.DATABASE_URL!)
+if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set')
 
-export default sql
+// HTTP tagged-template for app queries (fast, stateless, serverless-safe)
+export const sql = neon(process.env.DATABASE_URL)
+
+// Connection pool for Auth.js pg-adapter (needs .query() + rowCount)
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL })
