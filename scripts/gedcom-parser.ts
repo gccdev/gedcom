@@ -95,7 +95,7 @@ export function parseGedcom(content: string): ParsedGedcom {
               indi.fullName = l.value.replace(/\//g, '').replace(/\s+/g, ' ').trim()
               break
             case 'SEX':
-              indi.sex = l.value.charAt(0) || 'U'
+              indi.sex = l.value.charAt(0).toUpperCase() || 'U'
               break
             case 'BIRT': inBirth = true; break
             case 'DEAT': inDeath = true; break
