@@ -1,15 +1,18 @@
-import { auth } from '../auth'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export default auth((req) => {
-  const isAuthed = !!req.auth
+export async function middleware(req: NextRequest) {
   const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
   const isApi = req.nextUrl.pathname.startsWith('/api')
 
-  if (!isAuthed && !isAuthPage && !isApi) {
+  // Let auth pages and API routes through without a session check
+  if (isAuthPage || isApi) return NextResponse.next()
+
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET })
+  if (!token) {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
   }
-})
+}
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
