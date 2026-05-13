@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ReactFlow, {
   Background,
   Controls,
@@ -64,7 +64,7 @@ function HourglassTreeInner({ initialData }: HourglassTreeProps) {
       mother: detail.mother,
       spouses: detail.spouses,
       children: detail.children,
-      media: detail.media.slice(0, 3),
+      media: detail.media,
     })
     setSelectedId(id)
   }, [])
@@ -80,10 +80,10 @@ function HourglassTreeInner({ initialData }: HourglassTreeProps) {
     fetchPanel(id)
   }, [fetchTree, fetchPanel])
 
-  const nodesWithSelection = nodes.map(n => ({
-    ...n,
-    data: { ...n.data, isSelected: n.id === selectedId },
-  }))
+  const nodesWithSelection = useMemo(
+    () => nodes.map(n => ({ ...n, data: { ...n.data, isSelected: n.id === selectedId } })),
+    [nodes, selectedId]
+  )
 
   return (
     <div className="relative w-full h-full">

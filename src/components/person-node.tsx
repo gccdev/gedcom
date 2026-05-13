@@ -6,7 +6,6 @@ import type { Individual } from '@/lib/queries'
 
 interface PersonNodeData {
   individual: Individual
-  isSelected?: boolean
 }
 
 function formatYears(birthDate: string | null, deathDate: string | null): string {
