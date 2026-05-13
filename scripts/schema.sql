@@ -58,7 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_media_individual        ON media(individual_id);
 
 -- Auth.js v5 tables (pg adapter)
 CREATE TABLE IF NOT EXISTS users (
-  id              TEXT        NOT NULL PRIMARY KEY,
+  id              TEXT        NOT NULL PRIMARY KEY DEFAULT gen_random_uuid()::text,
   name            TEXT,
   email           TEXT        UNIQUE,
   "emailVerified" TIMESTAMPTZ,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS accounts (
-  id                  TEXT NOT NULL PRIMARY KEY,
+  id                  TEXT NOT NULL PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "userId"            TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   type                TEXT NOT NULL,
   provider            TEXT NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-  id             TEXT        NOT NULL PRIMARY KEY,
+  id             TEXT        NOT NULL PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "userId"       TEXT        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   expires        TIMESTAMPTZ NOT NULL,
   "sessionToken" TEXT        NOT NULL UNIQUE
