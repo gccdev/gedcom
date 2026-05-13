@@ -8,8 +8,8 @@ import ws from 'ws'
 // Required for Neon serverless in Node.js
 neonConfig.webSocketConstructor = ws
 
-const GEDCOM_FILE = join(__dirname, '../7.0.3/Ward Witts Brooke Kennaugh/Ward Witts Brooke Kennaugh.ged')
-const MEDIA_DIR = join(__dirname, '../7.0.3/Ward Witts Brooke Kennaugh/Ward Witts Brooke Kennaugh Media')
+const GEDCOM_FILE = join(__dirname, '../7.0.3/Brooke/Brooke.ged')
+const MEDIA_DIR = join(__dirname, '../7.0.3/Brooke/Brooke Media')
 
 const PHOTO_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.tiff', '.bmp'])
 const CONTENT_TYPES: Record<string, string> = {
