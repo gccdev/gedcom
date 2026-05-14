@@ -49,11 +49,12 @@ function FullTreeInner({ data, rootPersonId }: FullTreeProps) {
     setNodes(n)
     setEdges(e)
 
+    let timer: ReturnType<typeof setTimeout> | undefined
     if (!initialised.current) {
       initialised.current = true
       const rootNode = n.find(nd => nd.id === rootPersonId)
       if (rootNode) {
-        setTimeout(() => {
+        timer = setTimeout(() => {
           setCenter(
             rootNode.position.x + NODE_W / 2,
             rootNode.position.y + NODE_H / 2,
@@ -62,10 +63,11 @@ function FullTreeInner({ data, rootPersonId }: FullTreeProps) {
         }, 50)
       }
     }
-  }, [data, rootPersonId])
+    return () => clearTimeout(timer)
+  }, [data, rootPersonId, setCenter])
 
   const nodesWithSelection = useMemo(
-    () => nodes.map(n => ({ ...n, data: { ...n.data, isSelected: n.id === selectedId } })),
+    () => nodes.map(n => ({ ...n, selected: n.id === selectedId })),
     [nodes, selectedId],
   )
 
