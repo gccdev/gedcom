@@ -43,6 +43,18 @@ export interface PersonDetail {
   media: Array<{ id: number; blobUrl: string; mediaType: string; title: string | null }>
 }
 
+export interface FamilyRecord {
+  id: string
+  husbandId: string | null
+  wifeId: string | null
+  childIds: string[]
+}
+
+export interface FullTreeData {
+  individuals: Individual[]
+  families: FamilyRecord[]
+}
+
 type Row = Record<string, unknown>
 
 function rowToIndividual(row: Row): Individual {
@@ -212,4 +224,39 @@ export async function searchIndividuals(query: string): Promise<Individual[]> {
     LIMIT 20
   `
   return rows.map(r => rowToIndividual(r as Row))
+}
+
+export async function getFullTreeData(): Promise<FullTreeData> {
+  const [individualRows, familyRows, memberRows] = await Promise.all([
+    sql`
+      SELECT i.id, i.full_name, i.sex, i.birth_date, i.birth_place,
+             i.death_date, i.death_place,
+             (SELECT m.blob_url FROM media m
+              WHERE m.individual_id = i.id AND m.media_type = 'photo' LIMIT 1) AS photo_blob_url
+      FROM individuals i
+    `,
+    sql`SELECT id, husband_id, wife_id FROM families`,
+    sql`SELECT family_id, individual_id FROM family_members WHERE role = 'child'`,
+  ])
+
+  const childIds = new Map<string, string[]>()
+  for (const r of memberRows) {
+    const row = r as Row
+    const famId = row.family_id as string
+    const indId = row.individual_id as string
+    childIds.set(famId, [...(childIds.get(famId) ?? []), indId])
+  }
+
+  return {
+    individuals: individualRows.map(r => rowToIndividual(r as Row)),
+    families: familyRows.map(r => {
+      const row = r as Row
+      return {
+        id: row.id as string,
+        husbandId: row.husband_id as string | null,
+        wifeId: row.wife_id as string | null,
+        childIds: childIds.get(row.id as string) ?? [],
+      }
+    }),
+  }
 }
