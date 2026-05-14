@@ -98,6 +98,7 @@ function HourglassTreeInner({ initialData }: HourglassTreeProps) {
         fitViewOptions={{ padding: 0.3 }}
         minZoom={0.2}
         maxZoom={2}
+        nodesDraggable={false}
       >
         <Background />
         <Controls />
