@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.11.2",
+    "@dagrejs/dagre": "^3.0.0",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/blob": "^2.3.3",
     "next": "16.2.6",

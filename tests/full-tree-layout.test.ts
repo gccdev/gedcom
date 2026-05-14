@@ -11,29 +11,36 @@ function family(id: string, husbandId: string | null, wifeId: string | null, chi
 }
 
 describe('buildFullTreeLayout', () => {
-  it('places root person at generation 0 (y = 0)', () => {
+  it('renders root person as a personNode', () => {
     const data: FullTreeData = { individuals: [person('I1')], families: [] }
     const { nodes } = buildFullTreeLayout(data, 'I1')
-    expect(nodes.find(n => n.id === 'I1')!.position.y).toBe(0)
+    const root = nodes.find(n => n.id === 'I1')!
+    expect(root).toBeDefined()
+    expect(root.type).toBe('personNode')
   })
 
-  it('places parents above root (negative y)', () => {
+  it('places parents above root (smaller y)', () => {
     const data: FullTreeData = {
       individuals: [person('I1'), person('I2'), person('I3', 'F')],
       families: [family('F1', 'I2', 'I3', ['I1'])],
     }
     const { nodes } = buildFullTreeLayout(data, 'I1')
-    expect(nodes.find(n => n.id === 'I2')!.position.y).toBeLessThan(0)
-    expect(nodes.find(n => n.id === 'I3')!.position.y).toBeLessThan(0)
+    const root = nodes.find(n => n.id === 'I1')!
+    const father = nodes.find(n => n.id === 'I2')!
+    const mother = nodes.find(n => n.id === 'I3')!
+    expect(father.position.y).toBeLessThan(root.position.y)
+    expect(mother.position.y).toBeLessThan(root.position.y)
   })
 
-  it('places children below root (positive y)', () => {
+  it('places children below root (larger y)', () => {
     const data: FullTreeData = {
       individuals: [person('I1'), person('I2', 'F'), person('I3')],
       families: [family('F1', 'I1', 'I2', ['I3'])],
     }
     const { nodes } = buildFullTreeLayout(data, 'I1')
-    expect(nodes.find(n => n.id === 'I3')!.position.y).toBeGreaterThan(0)
+    const root = nodes.find(n => n.id === 'I1')!
+    const child = nodes.find(n => n.id === 'I3')!
+    expect(child.position.y).toBeGreaterThan(root.position.y)
   })
 
   it('assigns spouses the same y as their partner', () => {
@@ -103,20 +110,19 @@ describe('buildFullTreeLayout', () => {
       families: [family('F1', 'I1', 'I2', [])],
     }
     const { nodes } = buildFullTreeLayout(data, 'I1')
-    const personNodes = nodes.filter(n => n.type === 'personNode')
-    expect(personNodes).toHaveLength(2)
+    expect(nodes.filter(n => n.type === 'personNode')).toHaveLength(2)
   })
 
-  it('places unreachable individuals at y = 0', () => {
+  it('includes disconnected individuals as nodes', () => {
     const data: FullTreeData = {
       individuals: [person('I1'), person('I999')],
       families: [],
     }
     const { nodes } = buildFullTreeLayout(data, 'I1')
-    expect(nodes.find(n => n.id === 'I999')!.position.y).toBe(0)
+    expect(nodes.find(n => n.id === 'I999')).toBeDefined()
   })
 
-  it('grandparents are higher (more negative y) than parents', () => {
+  it('grandparents are at smaller y than parents', () => {
     const data: FullTreeData = {
       individuals: [person('I1'), person('I2'), person('I3', 'F'), person('I4'), person('I5', 'F')],
       families: [
@@ -153,7 +159,6 @@ describe('buildFullTreeLayout', () => {
     const { nodes } = buildFullTreeLayout(data, 'I1')
     const i4 = nodes.find(n => n.id === 'I4')!
     const i5 = nodes.find(n => n.id === 'I5')!
-    // Children of different families should be at different x positions
     expect(i4.position.x).not.toBe(i5.position.x)
   })
 })
