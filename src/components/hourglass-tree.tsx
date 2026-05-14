@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactFlow, {
   Background,
   Controls,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   ReactFlowProvider,
 } from 'reactflow'
 import type { NodeMouseHandler } from 'reactflow'
@@ -37,11 +38,18 @@ function HourglassTreeInner({ initialData }: HourglassTreeProps) {
   const [panelData, setPanelData] = useState<PanelData | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const { setCenter } = useReactFlow()
+  const isFirstRender = useRef(true)
 
   useEffect(() => {
     const { nodes: n, edges: e } = buildHourglassLayout(currentData)
     setNodes(n)
     setEdges(e)
+    // Center on the root node (always at position 0,0; node is 200×80px)
+    const duration = isFirstRender.current ? 0 : 400
+    isFirstRender.current = false
+    const timer = setTimeout(() => setCenter(100, 40, { zoom: 1.2, duration }), 50)
+    return () => clearTimeout(timer)
   }, [currentData])
 
   const fetchTree = useCallback(async (id: string) => {
@@ -94,8 +102,6 @@ function HourglassTreeInner({ initialData }: HourglassTreeProps) {
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
-        fitView
-        fitViewOptions={{ padding: 0.3 }}
         minZoom={0.2}
         maxZoom={2}
         nodesDraggable={false}
