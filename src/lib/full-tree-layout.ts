@@ -103,7 +103,10 @@ export function buildFullTreeLayout(
         personX.set(fam.wifeId, x)
         placed.add(fam.wifeId)
         x += NODE_W + H_GAP
-      } else if (!fam.wifeId) {
+      } else if (fam.wifeId) {
+        // already placed elsewhere — advance cursor past her existing position
+        x = Math.max(x, (personX.get(fam.wifeId) ?? x) + NODE_W + H_GAP)
+      } else {
         x += H_GAP
       }
 
@@ -111,8 +114,8 @@ export function buildFullTreeLayout(
       const wx = fam.wifeId ? (personX.get(fam.wifeId) ?? 0) : null
       const mid =
         hx !== null && wx !== null
-          ? hx + NODE_W + COUPLE_GAP / 2 - 4
-          : (hx ?? wx ?? 0) + NODE_W / 2 - 4
+          ? (hx + wx) / 2 + NODE_W / 2
+          : (hx ?? wx ?? 0) + NODE_W / 2
       connX.set(fam.id, mid)
 
       cursor.set(g, x)

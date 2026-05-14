@@ -129,4 +129,31 @@ describe('buildFullTreeLayout', () => {
     const grandparent = nodes.find(n => n.id === 'I4')!
     expect(grandparent.position.y).toBeLessThan(parent.position.y)
   })
+
+  it('handles single-parent family (wife only)', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1', 'F'), person('I2')],
+      families: [family('F1', null, 'I1', ['I2'])],
+    }
+    const { nodes, edges } = buildFullTreeLayout(data, 'I1')
+    const conn = nodes.find(n => n.type === 'familyConnector')!
+    expect(conn).toBeDefined()
+    expect(edges.some(e => e.source === 'I1' && e.target === conn.id)).toBe(true)
+    expect(edges.some(e => e.source === conn.id && e.target === 'I2')).toBe(true)
+  })
+
+  it('places person in two families (remarriage) without overlap', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('I2', 'F'), person('I3', 'F'), person('I4'), person('I5')],
+      families: [
+        family('F1', 'I1', 'I2', ['I4']),
+        family('F2', 'I1', 'I3', ['I5']),
+      ],
+    }
+    const { nodes } = buildFullTreeLayout(data, 'I1')
+    const i4 = nodes.find(n => n.id === 'I4')!
+    const i5 = nodes.find(n => n.id === 'I5')!
+    // Children of different families should be at different x positions
+    expect(i4.position.x).not.toBe(i5.position.x)
+  })
 })
