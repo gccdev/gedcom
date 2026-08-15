@@ -57,12 +57,14 @@ and is imported as `@auth` (path alias, distinct from `@/*` → `src/*`). Middle
 unauthenticated non-`/auth`, non-`/api` requests to `/auth/signin`; `/api` routes are excluded
 there and must therefore check `await auth()` themselves, as every existing route does.
 
-**The tree loads whole, then lays out client-side.** `src/app/tree/page.tsx` fetches the entire
-graph with `getFullTreeData()` (~690 individuals) server-side, signs photos, and hands it to the
-`FullTree` client component. `src/lib/full-tree-layout.ts` runs dagre over a bipartite graph:
-person nodes plus a small `conn-<familyId>` connector node per family, spouses → connector →
-children. It is a pure function returning React Flow `nodes`/`edges`, which is why it is
-unit-testable without a DOM. `src/app/person/[id]/page.tsx` is the standalone detail page;
-`PersonPanel` inside the tree fetches the same data from `/api/person/[id]`.
+**The tree loads whole, then draws a slice.** `src/app/tree/page.tsx` fetches the entire graph with
+`getFullTreeData()` (~690 individuals) server-side, signs photos, and hands it to the `PedigreeTree`
+client component. `src/lib/tree-index.ts` builds parent/spouse/child lookup maps once;
+`src/lib/pedigree-layout.ts` then draws only the cards around the current focus person — the focus
+and spouse, their children to the left, and three ancestor generations to the right in fixed
+Ahnentafel slots (person *n*'s father is *2n*, mother *2n+1*), so positions are arithmetic rather
+than solved. Both modules are pure and unit-tested without a DOM. Re-rooting is client-side only:
+it calls `window.history.pushState` to set `?focus=<id>`, because `router.push` would re-run the
+server component and reissue the 690-row query on every click.
 
 Design notes and step-by-step plans for both features live in `docs/superpowers/`.
