@@ -2,11 +2,7 @@
 
 import { memo } from 'react'
 import { Handle, Position } from 'reactflow'
-import type { Individual } from '@/lib/queries'
-
-interface PersonNodeData {
-  individual: Individual
-}
+import { NODE_H, NODE_W, type PersonCardData } from '@/lib/pedigree-layout'
 
 function formatYears(birthDate: string | null, deathDate: string | null): string {
   const birth = birthDate ? birthDate.split(' ').pop() ?? '?' : '?'
@@ -14,39 +10,80 @@ function formatYears(birthDate: string | null, deathDate: string | null): string
   return death ? `${birth}–${death}` : `b. ${birth}`
 }
 
-function PersonNode({ data, selected }: { data: PersonNodeData; selected?: boolean }) {
-  const { individual } = data
-  const bgColor =
-    individual.sex === 'M' ? 'bg-blue-50 border-blue-200' :
-    individual.sex === 'F' ? 'bg-pink-50 border-pink-200' :
+function initials(fullName: string): string {
+  return fullName.split(' ').map(word => word[0]).slice(0, 2).join('')
+}
+
+const HIDDEN_HANDLE = {
+  opacity: 0,
+  width: 1,
+  height: 1,
+  minWidth: 0,
+  minHeight: 0,
+  border: 'none',
+} as const
+
+function PersonNode({ data }: { data: PersonCardData }) {
+  const { individual, role, isFocus, hasMore, spouseCount } = data
+
+  const tint =
+    individual.sex === 'M' ? 'bg-sky-50 border-sky-200' :
+    individual.sex === 'F' ? 'bg-rose-50 border-rose-200' :
     'bg-slate-50 border-slate-200'
-  const selectedRing = selected ? 'ring-2 ring-indigo-500' : ''
+  const focusRing = isFocus ? 'ring-2 ring-indigo-500 shadow-md' : 'shadow-sm'
 
   return (
-    <div className={`w-[200px] rounded-lg border px-3 py-2 shadow-sm cursor-pointer ${bgColor} ${selectedRing}`}>
-      <Handle type="target" position={Position.Top} className="!bg-slate-400" />
-      <div className="flex items-center gap-2">
-        {individual.photoBlobUrl ? (
-          <img
-            src={individual.photoBlobUrl}
-            alt={individual.fullName}
-            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-          />
-        ) : (
-          <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-semibold text-slate-500 flex-shrink-0">
-            {individual.fullName.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
-          </div>
-        )}
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
-            {individual.fullName}
-          </p>
-          <p className="text-[10px] text-slate-500 leading-tight">
-            {formatYears(individual.birthDate, individual.deathDate)}
-          </p>
+    <div
+      className={`relative flex items-center gap-3 rounded-md border px-3 py-2 cursor-pointer hover:shadow-md transition-shadow ${tint} ${focusRing}`}
+      style={{ width: NODE_W, height: NODE_H }}
+    >
+      <Handle type="target" id="left" position={Position.Left} style={HIDDEN_HANDLE} />
+      <Handle type="target" id="top" position={Position.Top} style={HIDDEN_HANDLE} />
+
+      {individual.photoBlobUrl ? (
+        <img
+          src={individual.photoBlobUrl}
+          alt={individual.fullName}
+          className="w-12 h-12 rounded object-cover flex-shrink-0"
+        />
+      ) : (
+        <div className="w-12 h-12 rounded bg-slate-200 flex items-center justify-center text-sm font-semibold text-slate-500 flex-shrink-0">
+          {initials(individual.fullName)}
         </div>
+      )}
+
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-slate-800 truncate leading-tight">
+          {individual.fullName}
+        </p>
+        <p className="text-xs text-slate-500 leading-tight">
+          {formatYears(individual.birthDate, individual.deathDate)}
+        </p>
+        {role === 'spouse' && spouseCount > 1 && (
+          <p className="text-[10px] text-slate-400 leading-tight">+{spouseCount - 1} more</p>
+        )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-slate-400" />
+
+      <button
+        type="button"
+        data-detail-button
+        aria-label={`View details for ${individual.fullName}`}
+        className="flex-shrink-0 text-slate-400 hover:text-indigo-600 px-1 text-lg leading-none"
+      >
+        ›
+      </button>
+
+      {hasMore && (
+        <span
+          aria-hidden
+          className="absolute -right-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg leading-none"
+        >
+          ›
+        </span>
+      )}
+
+      <Handle type="source" id="right" position={Position.Right} style={HIDDEN_HANDLE} />
+      <Handle type="source" id="bottom" position={Position.Bottom} style={HIDDEN_HANDLE} />
     </div>
   )
 }
