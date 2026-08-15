@@ -633,15 +633,14 @@ describe('buildPedigreeLayout spouse and children', () => {
     expect(childEdge.targetHandle).toBe('left')
   })
 
-  it('does not redraw a relative already placed as an ancestor', () => {
+  it('skips a child whose individual record is missing from the index', () => {
     const data: FullTreeData = {
-      individuals: [person('I1'), person('FA')],
-      families: [family('F1', 'FA', null, ['I1'])],
+      individuals: [person('I1')],
+      families: [family('F1', 'I1', null, ['GHOST'])],
     }
-    // FA is I1's father; making FA also a "child" is impossible, so assert the
-    // simpler invariant: no id appears twice in the node list.
-    const ids = layout(data, 'I1').nodes.map(n => n.id)
-    expect(new Set(ids).size).toBe(ids.length)
+    const { nodes, edges } = layout(data, 'I1')
+    expect(nodes.filter(n => n.data.role === 'child')).toHaveLength(0)
+    expect(edges).toHaveLength(0)
   })
 })
 ```
