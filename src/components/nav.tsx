@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { auth, signOut } from '@auth'
+import { signOut } from '@auth'
+import { getSession } from '@/lib/session'
 import SearchBar from './search-bar'
 
 export default async function Nav() {
-  const session = await auth()
+  const session = await getSession()
 
   return (
     <nav className="h-14 border-b border-slate-200 bg-white flex items-center px-6 gap-6 shrink-0">

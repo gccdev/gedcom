@@ -1,4 +1,4 @@
-import { auth } from '@auth'
+import { getSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { searchIndividuals } from '@/lib/queries'
 import Link from 'next/link'
@@ -8,7 +8,7 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{ q?: string }>
 }) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) redirect('/auth/signin')
 
   const { q } = await searchParams

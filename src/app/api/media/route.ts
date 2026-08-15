@@ -1,10 +1,10 @@
-import { auth } from '@auth'
+import { getSession } from '@/lib/session'
 import { get } from '@vercel/blob'
 
 const ALLOWED_BLOB_HOSTNAME = /^[a-z0-9]+\.public\.blob\.vercel-storage\.com$/
 
 export async function GET(req: Request) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) return new Response('Unauthorized', { status: 401 })
 
   const { searchParams } = new URL(req.url)

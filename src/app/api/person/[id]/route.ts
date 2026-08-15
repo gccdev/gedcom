@@ -1,9 +1,9 @@
-import { auth } from '@auth'
+import { getSession } from '@/lib/session'
 import { getPersonDetail } from '@/lib/queries'
 import { signBlobUrl, signIndividual } from '@/lib/media'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) return new Response('Unauthorized', { status: 401 })
 
   const { id } = await params

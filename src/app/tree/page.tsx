@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { auth } from '@auth'
+import { getSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { getFullTreeData } from '@/lib/queries'
 import { signIndividual } from '@/lib/media'
@@ -7,7 +7,7 @@ import PedigreeTree from '@/components/pedigree-tree'
 import type { Individual } from '@/lib/queries'
 
 export default async function TreePage() {
-  const session = await auth()
+  const session = await getSession()
   if (!session) redirect('/auth/signin')
 
   const defaultFocusId = process.env.DEFAULT_ROOT_PERSON_ID ?? ''

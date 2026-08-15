@@ -1,4 +1,4 @@
-import { auth } from '@auth'
+import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
 import { getPersonDetail, Individual } from '@/lib/queries'
 import { signBlobUrl, signIndividual } from '@/lib/media'
@@ -6,7 +6,7 @@ import Link from 'next/link'
 import MediaGallery from '@/components/media-gallery'
 
 export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) redirect('/auth/signin')
 
   const { id } = await params
