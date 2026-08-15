@@ -1,7 +1,11 @@
 import NextAuth from 'next-auth'
 import { authConfig } from '../auth.config'
 
-const { auth } = NextAuth(authConfig)
+// Providers are dropped here on purpose. Auth.js requires an adapter whenever an
+// email provider is configured, and the edge-safe config has none by design — so
+// keeping Resend would throw MissingAdapter on every request. Verifying a JWT
+// session cookie needs only AUTH_SECRET, not the providers.
+const { auth } = NextAuth({ ...authConfig, providers: [] })
 
 export default auth((req) => {
   const isAuthed = !!req.auth
