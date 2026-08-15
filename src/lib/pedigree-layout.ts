@@ -1,7 +1,7 @@
 import type { Node, Edge } from 'reactflow'
 import type { Individual } from './queries'
 import type { TreeIndex } from './tree-index'
-import { getParents } from './tree-index'
+import { getChildIds, getParents, getSpouseIds } from './tree-index'
 
 export const NODE_W = 220
 export const NODE_H = 72
@@ -115,6 +115,54 @@ export function buildPedigreeLayout(
       queue.push({ id: parentId, generation: generation + 1, slot: parentSlot })
     }
   }
+
+  const focusCentreY = slotCentreY(0, 0)
+
+  const spouseId = getSpouseIds(index, focusId)[0]
+  const spouse = spouseId ? index.byId.get(spouseId) : undefined
+  if (spouse && !placed.has(spouse.id)) {
+    placed.add(spouse.id)
+    nodes.push(
+      card(spouse, columnX(0), focusCentreY + NODE_H + MARRIAGE_GAP, {
+        role: 'spouse',
+        isFocus: false,
+        hasMore: false,
+        spouseCount: getSpouseIds(index, focusId).length,
+      }),
+    )
+    edges.push({
+      id: `m-${focusId}-${spouse.id}`,
+      source: focusId,
+      sourceHandle: 'bottom',
+      target: spouse.id,
+      targetHandle: 'top',
+      type: 'straight',
+    })
+  }
+
+  const coupleCentreY = focusCentreY + (spouse ? (NODE_H + MARRIAGE_GAP) / 2 : 0)
+  const childIds = getChildIds(index, focusId).filter(id => index.byId.has(id) && !placed.has(id))
+
+  childIds.forEach((childId, k) => {
+    const child = index.byId.get(childId)!
+    placed.add(childId)
+    nodes.push(
+      card(child, columnX(-1), coupleCentreY + (k - (childIds.length - 1) / 2) * ROW, {
+        role: 'child',
+        isFocus: false,
+        hasMore: false,
+        spouseCount: 0,
+      }),
+    )
+    edges.push({
+      id: `e-${childId}-${focusId}`,
+      source: childId,
+      sourceHandle: 'right',
+      target: focusId,
+      targetHandle: 'left',
+      type: 'smoothstep',
+    })
+  })
 
   return { nodes, edges }
 }

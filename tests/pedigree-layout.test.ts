@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildTreeIndex } from '../src/lib/tree-index'
 import {
-  buildPedigreeLayout, resolveFocusId, NODE_W, NODE_H, COL_GAP, ROW, MAX_GEN,
+  buildPedigreeLayout, resolveFocusId, NODE_W, NODE_H, COL_GAP, ROW, MARRIAGE_GAP, MAX_GEN,
 } from '../src/lib/pedigree-layout'
 import type { FullTreeData, FamilyRecord, Individual } from '../src/lib/queries'
 
@@ -140,5 +140,84 @@ describe('buildPedigreeLayout ancestors', () => {
     }
     const { nodes } = layout(data, 'I1')
     expect(nodes.filter(n => n.id === 'SHARED')).toHaveLength(1)
+  })
+})
+
+describe('buildPedigreeLayout spouse and children', () => {
+  const couple: FullTreeData = {
+    individuals: [person('I1'), person('SP', 'F'), person('C1'), person('C2', 'F')],
+    families: [family('F1', 'I1', 'SP', ['C1', 'C2'])],
+  }
+
+  it('places the spouse directly below the focus person', () => {
+    const { nodes } = layout(couple, 'I1')
+    const spouse = nodes.find(n => n.id === 'SP')!
+    const focus = nodes.find(n => n.id === 'I1')!
+    expect(spouse.data.role).toBe('spouse')
+    expect(spouse.position.x).toBe(focus.position.x)
+    expect(spouse.position.y).toBe(focus.position.y + NODE_H + MARRIAGE_GAP)
+  })
+
+  it('joins the couple with a straight marriage edge', () => {
+    const { edges } = layout(couple, 'I1')
+    const marriage = edges.find(e => e.source === 'I1' && e.target === 'SP')!
+    expect(marriage.type).toBe('straight')
+    expect(marriage.sourceHandle).toBe('bottom')
+    expect(marriage.targetHandle).toBe('top')
+  })
+
+  it('shows the first spouse and counts the rest', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('SP', 'F'), person('SP2', 'F')],
+      families: [family('F1', 'I1', 'SP', []), family('F2', 'I1', 'SP2', [])],
+    }
+    const { nodes } = layout(data, 'I1')
+    expect(nodes.find(n => n.id === 'SP')!.data.spouseCount).toBe(2)
+    expect(nodes.find(n => n.id === 'SP2')).toBeUndefined()
+  })
+
+  it('puts children in a column to the left of the focus person', () => {
+    const { nodes } = layout(couple, 'I1')
+    const child = nodes.find(n => n.id === 'C1')!
+    expect(child.data.role).toBe('child')
+    expect(child.position.x).toBe(-(NODE_W + COL_GAP))
+  })
+
+  it('centres the children column on the couple', () => {
+    const { nodes } = layout(couple, 'I1')
+    const coupleY = centreY(nodes, 'I1') + (NODE_H + MARRIAGE_GAP) / 2
+    expect((centreY(nodes, 'C1') + centreY(nodes, 'C2')) / 2).toBe(coupleY)
+    expect(centreY(nodes, 'C2') - centreY(nodes, 'C1')).toBe(ROW)
+  })
+
+  it('centres the children on the focus person when there is no spouse', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('C1')],
+      families: [family('F1', 'I1', null, ['C1'])],
+    }
+    const { nodes } = layout(data, 'I1')
+    expect(centreY(nodes, 'C1')).toBe(centreY(nodes, 'I1'))
+  })
+
+  it('unions children across families and draws each one edge to the focus', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('SP', 'F'), person('SP2', 'F'), person('C1'), person('C2')],
+      families: [family('F1', 'I1', 'SP', ['C1']), family('F2', 'I1', 'SP2', ['C2'])],
+    }
+    const { nodes, edges } = layout(data, 'I1')
+    expect(nodes.filter(n => n.data.role === 'child').map(n => n.id)).toEqual(['C1', 'C2'])
+    const childEdge = edges.find(e => e.source === 'C1' && e.target === 'I1')!
+    expect(childEdge.sourceHandle).toBe('right')
+    expect(childEdge.targetHandle).toBe('left')
+  })
+
+  it('skips a child whose individual record is missing from the index', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1')],
+      families: [family('F1', 'I1', null, ['GHOST'])],
+    }
+    const { nodes, edges } = layout(data, 'I1')
+    expect(nodes.filter(n => n.data.role === 'child')).toHaveLength(0)
+    expect(edges).toHaveLength(0)
   })
 })
