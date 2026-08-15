@@ -1,21 +1,21 @@
+import { Suspense } from 'react'
 import { auth } from '@auth'
 import { redirect } from 'next/navigation'
 import { getFullTreeData } from '@/lib/queries'
 import { signIndividual } from '@/lib/media'
-import FullTree from '@/components/full-tree'
+import PedigreeTree from '@/components/pedigree-tree'
 import type { Individual } from '@/lib/queries'
 
 export default async function TreePage() {
   const session = await auth()
   if (!session) redirect('/auth/signin')
 
-  const personId = process.env.DEFAULT_ROOT_PERSON_ID ?? ''
-  if (!personId) {
+  const defaultFocusId = process.env.DEFAULT_ROOT_PERSON_ID ?? ''
+  if (!defaultFocusId) {
     return <div className="p-8 text-slate-500">Set DEFAULT_ROOT_PERSON_ID in .env.local</div>
   }
 
   const data = await getFullTreeData()
-
   const signedIndividuals = await Promise.all(data.individuals.map(i => signIndividual(i)))
   const signedData = {
     ...data,
@@ -24,7 +24,9 @@ export default async function TreePage() {
 
   return (
     <div className="w-full h-full">
-      <FullTree data={signedData} rootPersonId={personId} />
+      <Suspense fallback={<div className="p-8 text-slate-500">Loading tree…</div>}>
+        <PedigreeTree data={signedData} defaultFocusId={defaultFocusId} />
+      </Suspense>
     </div>
   )
 }
