@@ -85,13 +85,16 @@ export function buildPedigreeLayout(
     placed.add(id)
 
     const parents = getParents(index, id)
-    const hasParents = Boolean(parents.fatherId || parents.motherId)
+    const hasDrawableParents = Boolean(
+      (parents.fatherId && index.byId.has(parents.fatherId)) ||
+      (parents.motherId && index.byId.has(parents.motherId)),
+    )
 
     nodes.push(
       card(individual, columnX(generation), slotCentreY(generation, slot), {
         role: generation === 0 ? 'focus' : 'ancestor',
         isFocus: generation === 0,
-        hasMore: generation === MAX_GEN && hasParents,
+        hasMore: generation === MAX_GEN && hasDrawableParents,
         spouseCount: 0,
       }),
     )
@@ -118,16 +121,18 @@ export function buildPedigreeLayout(
 
   const focusCentreY = slotCentreY(0, 0)
 
-  const spouseId = getSpouseIds(index, focusId)[0]
-  const spouse = spouseId ? index.byId.get(spouseId) : undefined
+  const spouseIds = getSpouseIds(index, focusId)
+  const spouse = spouseIds[0] ? index.byId.get(spouseIds[0]) : undefined
+  let spouseDrawn = false
   if (spouse && !placed.has(spouse.id)) {
+    spouseDrawn = true
     placed.add(spouse.id)
     nodes.push(
       card(spouse, columnX(0), focusCentreY + NODE_H + MARRIAGE_GAP, {
         role: 'spouse',
         isFocus: false,
         hasMore: false,
-        spouseCount: getSpouseIds(index, focusId).length,
+        spouseCount: spouseIds.length,
       }),
     )
     edges.push({
@@ -140,7 +145,7 @@ export function buildPedigreeLayout(
     })
   }
 
-  const coupleCentreY = focusCentreY + (spouse ? (NODE_H + MARRIAGE_GAP) / 2 : 0)
+  const coupleCentreY = focusCentreY + (spouseDrawn ? (NODE_H + MARRIAGE_GAP) / 2 : 0)
   const childIds = getChildIds(index, focusId).filter(id => index.byId.has(id) && !placed.has(id))
 
   childIds.forEach((childId, k) => {

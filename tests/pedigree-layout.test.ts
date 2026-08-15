@@ -220,4 +220,26 @@ describe('buildPedigreeLayout spouse and children', () => {
     expect(nodes.filter(n => n.data.role === 'child')).toHaveLength(0)
     expect(edges).toHaveLength(0)
   })
+
+  // Defensive/invariant test: this data (a person married to their own
+  // ancestor) is genealogically bizarre and not expected to occur in real
+  // data, but the layout must still behave sanely when `placed` already
+  // contains the spouse by the time the spouse column is laid out.
+  it('does not double-draw a spouse who was already placed as an ancestor, and does not offset the children column for a spouse card that was never drawn', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('SP', 'F'), person('FA'), person('C1')],
+      families: [
+        // SP is I1's mother...
+        family('F1', 'FA', 'SP', ['I1']),
+        // ...and also I1's spouse.
+        family('F2', 'I1', 'SP', ['C1']),
+      ],
+    }
+    const { nodes } = layout(data, 'I1')
+
+    expect(nodes.filter(n => n.id === 'SP')).toHaveLength(1)
+    expect(nodes.find(n => n.id === 'SP')!.data.role).toBe('ancestor')
+    expect(nodes.filter(n => n.data.role === 'spouse')).toHaveLength(0)
+    expect(centreY(nodes, 'C1')).toBe(centreY(nodes, 'I1'))
+  })
 })

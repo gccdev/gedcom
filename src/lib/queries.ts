@@ -235,8 +235,8 @@ export async function getFullTreeData(): Promise<FullTreeData> {
               WHERE m.individual_id = i.id AND m.media_type = 'photo' LIMIT 1) AS photo_blob_url
       FROM individuals i
     `,
-    sql`SELECT id, husband_id, wife_id FROM families`,
-    sql`SELECT family_id, individual_id FROM family_members WHERE role = 'child'`,
+    sql`SELECT id, husband_id, wife_id FROM families ORDER BY id`,
+    sql`SELECT family_id, individual_id FROM family_members WHERE role = 'child' ORDER BY family_id, individual_id`,
   ])
 
   const childIds = new Map<string, string[]>()

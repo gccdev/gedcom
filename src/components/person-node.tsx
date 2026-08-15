@@ -64,6 +64,12 @@ function PersonNode({ data }: { data: PersonCardData }) {
         )}
       </div>
 
+      {/*
+        No onClick here by design: the `data-detail-button` attribute is the
+        contract. The click bubbles to React Flow's node wrapper, where
+        pedigree-tree.tsx's onNodeClick recovers intent via
+        closest('[data-detail-button]') to open the panel instead of re-rooting.
+      */}
       <button
         type="button"
         data-detail-button
