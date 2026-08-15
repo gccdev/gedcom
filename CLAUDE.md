@@ -11,8 +11,8 @@ npm run dev              # Next.js dev server (localhost:3000)
 npm run build            # production build
 npm test                 # vitest, single run
 npm run test:watch       # vitest watch mode
-npx vitest run tests/full-tree-layout.test.ts          # one test file
-npx vitest run -t 'renders root person as a personNode' # one test by name
+npx vitest run tests/pedigree-layout.test.ts           # one test file
+npx vitest run -t 'renders the focus person as a personCard flagged isFocus' # one test by name
 npm run import-gedcom    # wipe + reimport GEDCOM into Postgres and Blob
 ```
 
