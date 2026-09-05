@@ -60,7 +60,8 @@ const EVENT_TAGS = new Set([
 ])
 
 export function parseGedcom(content: string): ParsedGedcom {
-  const lines = content.split('\n')
+  // GEDCOM files arrive with LF, CRLF, or (from classic Mac exporters) bare CR terminators.
+  const lines = content.split(/\r\n|\r|\n/)
     .map(parseLine)
     .filter((l): l is GedcomLine => l !== null)
 

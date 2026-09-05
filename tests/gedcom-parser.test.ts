@@ -119,3 +119,14 @@ describe('parseGedcom', () => {
     expect(obj.title).toBe('Robert Ward 1965')
   })
 })
+
+describe('line terminators', () => {
+  it('parses identically with LF, CRLF, and bare CR terminators', () => {
+    const lf = parseGedcom(SAMPLE)
+    const crlf = parseGedcom(SAMPLE.replace(/\n/g, '\r\n'))
+    const cr = parseGedcom(SAMPLE.replace(/\n/g, '\r'))
+    expect(lf.individuals.size).toBe(3)
+    expect(crlf).toEqual(lf)
+    expect(cr).toEqual(lf)
+  })
+})
