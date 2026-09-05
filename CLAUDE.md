@@ -20,7 +20,8 @@ There is no lint script and no lint config; `npm run build` (type-check + Next b
 
 One-time DB setup (no script wraps it):
 `npx dotenv -e .env.local -- bash -c 'psql "$DATABASE_URL" -f scripts/schema.sql'`, or paste
-`scripts/schema.sql` into the Neon SQL editor.
+`scripts/schema.sql` into the Neon SQL editor. The file is idempotent and also carries the
+additive column migrations, so re-running it brings an existing database up to date.
 
 Env lives in `.env.local`; see `.env.example` for the required keys
 (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_RESEND_KEY`, `RESEND_FROM`, `BLOB_READ_WRITE_TOKEN`,
@@ -35,9 +36,10 @@ Auth.js v5 magic links, private Vercel Blob for media, React Flow for the tree.
 with `scripts/gedcom-parser.ts` (dependency-free, pure function — the parser is the unit-tested
 part), TRUNCATEs `individuals`, `families`, and `users`, uploads `7.0.3/Brooke/Brooke Media` to
 Vercel Blob with `access: 'private'`, then inserts. GEDCOM IDs are the primary keys throughout, so
-`DEFAULT_ROOT_PERSON_ID` is a raw GEDCOM ID. The scripts run under `tsconfig.scripts.json`
-(CommonJS + ts-node) and need `neonConfig.webSocketConstructor = ws` — anything touching `Pool`
-outside the Next runtime does.
+`DEFAULT_ROOT_PERSON_ID` is a raw GEDCOM ID. Family and child order from the GEDCOM is persisted
+in `families.seq` and `family_members.position`; the tree relies on it. The scripts run under
+`tsconfig.scripts.json` (CommonJS + ts-node) and need `neonConfig.webSocketConstructor = ws` —
+anything touching `Pool` outside the Next runtime does.
 
 **Data access is centralised in `src/lib/queries.ts`.** It is the only module that imports `sql`
 from `src/lib/db.ts`, and it maps snake_case rows to camelCase interfaces (`Individual`,

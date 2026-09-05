@@ -91,16 +91,20 @@ async function main() {
 
   // Insert families
   console.log('Inserting families...')
+  // The parser preserves GEDCOM file order, so record it: `seq` for families and
+  // `position` for children. Ids are not in file order, so without these the tree
+  // would render siblings and spouses in an arbitrary sequence.
+  let seq = 0
   for (const [, fam] of families) {
     await pool.query(
-      `INSERT INTO families (id, husband_id, wife_id, marriage_date, marriage_place) VALUES ($1,$2,$3,$4,$5)`,
-      [fam.id, fam.husbandId || null, fam.wifeId || null,
+      `INSERT INTO families (id, husband_id, wife_id, seq, marriage_date, marriage_place) VALUES ($1,$2,$3,$4,$5,$6)`,
+      [fam.id, fam.husbandId || null, fam.wifeId || null, seq++,
        fam.marriage.date || null, fam.marriage.place || null]
     )
-    for (const childId of fam.childIds) {
+    for (let position = 0; position < fam.childIds.length; position++) {
       await pool.query(
-        `INSERT INTO family_members (family_id, individual_id, role) VALUES ($1,$2,'child')`,
-        [fam.id, childId]
+        `INSERT INTO family_members (family_id, individual_id, role, position) VALUES ($1,$2,'child',$3)`,
+        [fam.id, fam.childIds[position], position]
       )
     }
   }

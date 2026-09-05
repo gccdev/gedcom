@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS families (
   id             TEXT PRIMARY KEY,
   husband_id     TEXT REFERENCES individuals(id),
   wife_id        TEXT REFERENCES individuals(id),
+  seq            INTEGER NOT NULL DEFAULT 0,
   marriage_date  TEXT,
   marriage_place TEXT
 );
@@ -29,8 +30,16 @@ CREATE TABLE IF NOT EXISTS family_members (
   family_id     TEXT NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   individual_id TEXT NOT NULL REFERENCES individuals(id) ON DELETE CASCADE,
   role          TEXT NOT NULL DEFAULT 'child',
+  position      INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (family_id, individual_id)
 );
+
+-- Additive migrations for databases created before GEDCOM order was persisted.
+-- `families.seq` is the family's position in the GEDCOM file; `family_members.position`
+-- is the child's position within its family. Both default to 0, so an un-migrated
+-- database still reads correctly (it just falls back to the id tiebreak).
+ALTER TABLE families ADD COLUMN IF NOT EXISTS seq INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE family_members ADD COLUMN IF NOT EXISTS position INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS events (
   id            SERIAL PRIMARY KEY,
