@@ -33,7 +33,11 @@ const CHEVRON =
   `data-expand-down` attributes are the contract. Clicks bubble to React
   Flow's node wrapper, where family-tree.tsx's onNodeClick recovers intent
   via closest('[data-expand-up]') etc. Any other click on the card opens
-  the detail panel.
+  the detail panel. The visually hidden `data-detail-button` exists for
+  keyboard/AT users: React Flow's node wrapper handles Enter/Space itself
+  (for selection) rather than calling onNodeClick, so a real focusable
+  button is needed to activate the panel via keyboard — its click falls
+  through the same onNodeClick branch as any other non-chevron click.
 */
 function PersonNode({ data }: { data: PersonCardData }) {
   const { individual, isFocus, isSpouse, spouseCount, canExpandUp, expandedUp, canExpandDown, expandedDown } = data
@@ -75,6 +79,13 @@ function PersonNode({ data }: { data: PersonCardData }) {
           <p className="text-[10px] text-slate-400 leading-tight">+{spouseCount - 1} more</p>
         )}
       </div>
+
+      <button
+        type="button"
+        data-detail-button
+        aria-label={`View details for ${individual.fullName}`}
+        className="sr-only"
+      />
 
       {canExpandDown && (
         <button
