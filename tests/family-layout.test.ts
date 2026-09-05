@@ -328,7 +328,7 @@ describe('buildFamilyLayout spouse and children', () => {
     const { nodes } = layout(couple(), 'I1')
     const coupleCentre = centreY(nodes, 'I1') + (NODE_H + MARRIAGE_GAP) / 2
     // C1's band is a couple (COUPLE_H tall); C2's is a single card.
-    const bandTop = centreY(nodes, 'C1') - (NODE_H + MARRIAGE_GAP) / 2 - COUPLE_H / 2
+    const bandTop = centreY(nodes, 'C1') + (NODE_H + MARRIAGE_GAP) / 2 - COUPLE_H / 2
     const bandBottom = centreY(nodes, 'C2') + NODE_H / 2
     expect((bandTop + bandBottom) / 2).toBe(coupleCentre)
   })
