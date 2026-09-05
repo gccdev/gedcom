@@ -257,3 +257,198 @@ describe('buildFamilyLayout ancestors', () => {
     expect(edges.filter(e => e.target === 'SHARED')).toHaveLength(1)
   })
 })
+
+describe('buildFamilyLayout spouse and children', () => {
+  /** I1 + SP with children C1 (married to CS, child GC) and C2. */
+  function couple(): FullTreeData {
+    return {
+      individuals: [
+        person('I1'), person('SP', 'F'), person('C1'), person('C2', 'F'),
+        person('CS', 'F'), person('GC'),
+      ],
+      families: [
+        family('F1', 'I1', 'SP', ['C1', 'C2']),
+        family('F2', 'C1', 'CS', ['GC']),
+      ],
+    }
+  }
+
+  it('places the spouse directly below the focus person, flagged isSpouse', () => {
+    const { nodes } = layout(couple(), 'I1')
+    const spouse = node(nodes, 'SP')
+    const focus = node(nodes, 'I1')
+    expect(spouse.data.isSpouse).toBe(true)
+    expect(spouse.position.x).toBe(focus.position.x)
+    expect(spouse.position.y).toBe(focus.position.y + NODE_H + MARRIAGE_GAP)
+    expect(spouse.data.canExpandUp).toBe(false)
+    expect(spouse.data.canExpandDown).toBe(false)
+  })
+
+  it('joins the couple with a straight marriage edge', () => {
+    const { edges } = layout(couple(), 'I1')
+    const marriage = edges.find(e => e.source === 'I1' && e.target === 'SP')!
+    expect(marriage.type).toBe('straight')
+    expect(marriage.sourceHandle).toBe('bottom')
+    expect(marriage.targetHandle).toBe('top')
+  })
+
+  it('shows the first spouse and counts the rest', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('SP', 'F'), person('SP2', 'F')],
+      families: [family('F1', 'I1', 'SP', []), family('F2', 'I1', 'SP2', [])],
+    }
+    const { nodes } = layout(data, 'I1')
+    expect(node(nodes, 'SP').data.spouseCount).toBe(2)
+    expect(nodes.find(n => n.id === 'SP2')).toBeUndefined()
+  })
+
+  it('draws children one column left and grandchildren two, but not great-grandchildren', () => {
+    const { nodes } = layout(chain(), 'I1')
+    expect(column(nodes, 'C1')).toBe(-1)
+    expect(column(nodes, 'GC1')).toBe(-2)
+    expect(nodes.find(n => n.id === 'GGC1')).toBeUndefined()
+    expect(node(nodes, 'C1').data.expandedDown).toBe(true)
+    expect(node(nodes, 'GC1').data.canExpandDown).toBe(true)
+    expect(node(nodes, 'GC1').data.expandedDown).toBe(false)
+    expect(node(nodes, 'C1').data.canExpandUp).toBe(false)
+  })
+
+  it('draws an expanded child with their spouse beneath them and their children to the left', () => {
+    const { nodes, edges } = layout(couple(), 'I1')
+    expect(node(nodes, 'CS').data.isSpouse).toBe(true)
+    expect(node(nodes, 'CS').position.y).toBe(node(nodes, 'C1').position.y + NODE_H + MARRIAGE_GAP)
+    expect(column(nodes, 'GC')).toBe(-2)
+    expect(centreY(nodes, 'GC')).toBe(centreY(nodes, 'C1') + (NODE_H + MARRIAGE_GAP) / 2)
+    const toParent = edges.find(e => e.source === 'GC' && e.target === 'C1')!
+    expect(toParent.sourceHandle).toBe('right')
+    expect(toParent.targetHandle).toBe('left')
+  })
+
+  it('centres the children band on the couple', () => {
+    const { nodes } = layout(couple(), 'I1')
+    const coupleCentre = centreY(nodes, 'I1') + (NODE_H + MARRIAGE_GAP) / 2
+    // C1's band is a couple (COUPLE_H tall); C2's is a single card.
+    const bandTop = centreY(nodes, 'C1') - (NODE_H + MARRIAGE_GAP) / 2 - COUPLE_H / 2
+    const bandBottom = centreY(nodes, 'C2') + NODE_H / 2
+    expect((bandTop + bandBottom) / 2).toBe(coupleCentre)
+  })
+
+  it('collapsing a child hides their spouse and children and pulls the next child up', () => {
+    const index = buildTreeIndex(couple())
+    const open = layout(couple(), 'I1').nodes
+    expect(centreY(open, 'C2') - centreY(open, 'C1')).toBe(COUPLE_H + ROW_GAP)
+
+    const closed = buildFamilyLayout(index, 'I1', toggleExpansion(defaultExpansion(index, 'I1'), 'down', 'C1')).nodes
+    expect(closed.find(n => n.id === 'CS')).toBeUndefined()
+    expect(closed.find(n => n.id === 'GC')).toBeUndefined()
+    expect(centreY(closed, 'C2') - centreY(closed, 'C1')).toBe(NODE_H + ROW_GAP)
+    expect(node(closed, 'C1').data.canExpandDown).toBe(true)
+    expect(node(closed, 'C1').data.expandedDown).toBe(false)
+  })
+
+  it('centres the children on the focus person when there is no spouse', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('C1')],
+      families: [family('F1', 'I1', null, ['C1'])],
+    }
+    const { nodes } = layout(data, 'I1')
+    expect(centreY(nodes, 'C1')).toBe(centreY(nodes, 'I1'))
+  })
+
+  it('unions children across families in family order', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('SP', 'F'), person('SP2', 'F'), person('C1'), person('C2')],
+      families: [family('F1', 'I1', 'SP', ['C1']), family('F2', 'I1', 'SP2', ['C2'])],
+    }
+    const { nodes } = layout(data, 'I1')
+    const children = nodes.filter(n => column(nodes, n.id) === -1).map(n => n.id)
+    expect(children).toEqual(['C1', 'C2'])
+  })
+
+  it('skips a child whose individual record is missing from the index', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1')],
+      families: [family('F1', 'I1', null, ['GHOST'])],
+    }
+    const { nodes, edges } = layout(data, 'I1')
+    expect(nodes).toHaveLength(1)
+    expect(edges).toHaveLength(0)
+    expect(node(nodes, 'I1').data.canExpandDown).toBe(false)
+  })
+
+  // Defensive: a person married to their own ancestor. The ancestor pass runs
+  // first, so the spouse card is skipped and the children stay centred on the focus.
+  it('does not double-draw a spouse already placed as an ancestor', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('SP', 'F'), person('FA'), person('C1')],
+      families: [
+        family('F1', 'FA', 'SP', ['I1']),
+        family('F2', 'I1', 'SP', ['C1']),
+      ],
+    }
+    const { nodes } = layout(data, 'I1')
+    expect(nodes.filter(n => n.id === 'SP')).toHaveLength(1)
+    expect(node(nodes, 'SP').data.isSpouse).toBe(false)
+    expect(centreY(nodes, 'C1')).toBe(centreY(nodes, 'I1'))
+  })
+})
+
+describe('buildFamilyLayout siblings', () => {
+  /** FA + MO with children S1, I1, S2; S2 has a child N1. */
+  function withSiblings(): FullTreeData {
+    return {
+      individuals: [
+        person('FA'), person('MO', 'F'), person('S1'), person('I1'), person('S2', 'F'), person('N1'),
+      ],
+      families: [
+        family('F1', 'FA', 'MO', ['S1', 'I1', 'S2']),
+        family('F2', null, 'S2', ['N1']),
+      ],
+    }
+  }
+
+  it('stacks the sibling group in column 0 in family order', () => {
+    const { nodes } = layout(withSiblings(), 'I1')
+    for (const id of ['S1', 'I1', 'S2']) expect(column(nodes, id)).toBe(0)
+    expect(centreY(nodes, 'S1')).toBeLessThan(centreY(nodes, 'I1'))
+    expect(centreY(nodes, 'I1')).toBeLessThan(centreY(nodes, 'S2'))
+    expect(centreY(nodes, 'I1') - centreY(nodes, 'S1')).toBe(NODE_H + ROW_GAP)
+    expect(node(nodes, 'S1').data.isFocus).toBe(false)
+  })
+
+  it('leaves siblings collapsed but expandable when they have children', () => {
+    const { nodes } = layout(withSiblings(), 'I1')
+    expect(nodes.find(n => n.id === 'N1')).toBeUndefined()
+    expect(node(nodes, 'S2').data.canExpandDown).toBe(true)
+    expect(node(nodes, 'S2').data.expandedDown).toBe(false)
+    expect(node(nodes, 'S1').data.canExpandDown).toBe(false)
+    expect(node(nodes, 'S2').data.canExpandUp).toBe(false)
+  })
+
+  it('expanding a sibling draws their children to the left and pushes nothing above them', () => {
+    const index = buildTreeIndex(withSiblings())
+    const before = layout(withSiblings(), 'I1').nodes
+    const after = buildFamilyLayout(index, 'I1', toggleExpansion(defaultExpansion(index, 'I1'), 'down', 'S2')).nodes
+    expect(column(after, 'N1')).toBe(-1)
+    expect(centreY(after, 'N1')).toBe(centreY(after, 'S2'))
+    expect(centreY(after, 'I1') - centreY(after, 'S1')).toBe(centreY(before, 'I1') - centreY(before, 'S1'))
+  })
+
+  it('joins every sibling to the drawn parents', () => {
+    const { edges } = layout(withSiblings(), 'I1')
+    for (const id of ['S1', 'I1', 'S2']) {
+      expect(edges.find(e => e.source === id && e.target === 'FA')).toBeDefined()
+      expect(edges.find(e => e.source === id && e.target === 'MO')).toBeDefined()
+    }
+  })
+
+  it('centres the ancestors on the focus card, not the sibling stack', () => {
+    const { nodes } = layout(withSiblings(), 'I1')
+    expect((centreY(nodes, 'FA') + centreY(nodes, 'MO')) / 2).toBe(centreY(nodes, 'I1'))
+  })
+
+  it('draws only the focus in column 0 when they have no recorded parents', () => {
+    const { nodes } = layout({ individuals: [person('I1')], families: [] }, 'I1')
+    expect(nodes.map(n => n.id)).toEqual(['I1'])
+  })
+})

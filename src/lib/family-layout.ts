@@ -205,9 +205,91 @@ function placeParents(b: Builder, plan: UpPlan, column: number, centreY: number)
   }
 }
 
+interface DownPlan {
+  id: string
+  spouseId: string | null
+  children: DownPlan[]
+}
+
+/** Plans the spouse and descendants of `id`, which the caller has already claimed. */
+function planDown(b: Builder, id: string): DownPlan {
+  const plan: DownPlan = { id, spouseId: null, children: [] }
+  if (!b.expansion.down.has(id)) return plan
+
+  const spouseId = getSpouseIds(b.index, id)[0]
+  if (spouseId && b.index.byId.has(spouseId) && claim(b, spouseId)) plan.spouseId = spouseId
+
+  for (const childId of drawableChildren(b.index, id)) {
+    if (claim(b, childId)) plan.children.push(planDown(b, childId))
+  }
+  return plan
+}
+
+/** Height of the person card, or the couple when the spouse is drawn. */
+function unitHeight(plan: DownPlan): number {
+  return plan.spouseId ? COUPLE_H : NODE_H
+}
+
+function heightDown(plan: DownPlan): number {
+  if (plan.children.length === 0) return unitHeight(plan)
+  return Math.max(unitHeight(plan), stackHeight(plan.children.map(heightDown)))
+}
+
+function downFlags(b: Builder, id: string): Pick<PersonCardData, 'canExpandDown' | 'expandedDown'> {
+  return {
+    canExpandDown: drawableChildren(b.index, id).length > 0,
+    expandedDown: b.expansion.down.has(id),
+  }
+}
+
+function marriageEdge(personId: string, spouseId: string): Edge {
+  return {
+    id: `m-${personId}-${spouseId}`,
+    source: personId,
+    sourceHandle: 'bottom',
+    target: spouseId,
+    targetHandle: 'top',
+    type: 'straight',
+  }
+}
+
 /**
- * Lays out the family view around `focusId`: the focus card in column 0 and
- * its expanded ancestors to the right.
+ * Draws the family unit for `plan` in `column`, centred in the band
+ * [top, top + height], then its children one column to the left.
+ * Returns the person card's centre so the ancestor tree can hang off it.
+ */
+function placeDown(b: Builder, plan: DownPlan, column: number, top: number, height: number): number {
+  const unitCentre = top + height / 2
+  const personCentre = plan.spouseId ? unitCentre - (NODE_H + MARRIAGE_GAP) / 2 : unitCentre
+
+  const flags = plan.id === b.focusId
+    ? { ...downFlags(b, plan.id), ...upFlags(b, plan.id) }
+    : downFlags(b, plan.id)
+  pushCard(b, plan.id, column, personCentre, flags)
+
+  if (plan.spouseId) {
+    pushCard(b, plan.spouseId, column, personCentre + NODE_H + MARRIAGE_GAP, {
+      isSpouse: true,
+      spouseCount: getSpouseIds(b.index, plan.id).length,
+    })
+    b.edges.push(marriageEdge(plan.id, plan.spouseId))
+  }
+
+  const childHeights = plan.children.map(heightDown)
+  let childTop = unitCentre - stackHeight(childHeights) / 2
+  plan.children.forEach((child, k) => {
+    placeDown(b, child, column - 1, childTop, childHeights[k])
+    b.edges.push(descentEdge(child.id, plan.id))
+    childTop += childHeights[k] + ROW_GAP
+  })
+
+  return personCentre
+}
+
+/**
+ * Lays out the family view around `focusId`: the focus's sibling group in
+ * column 0 (each a descendant-side root with optional spouse and children to
+ * the left), and the focus's expanded ancestors to the right.
  */
 export function buildFamilyLayout(
   index: TreeIndex,
@@ -217,11 +299,30 @@ export function buildFamilyLayout(
   const b: Builder = { index, expansion, focusId, placed: new Set(), nodes: [], edges: [] }
   if (!index.byId.has(focusId)) return { nodes: [], edges: [] }
 
+  // Ancestors are planned first so a person who is both an ancestor and a
+  // spouse or sibling is drawn in the pedigree.
   claim(b, focusId)
   const upPlan = planUp(b, focusId)
 
-  const focusCentre = NODE_H / 2
-  pushCard(b, focusId, 0, focusCentre, upFlags(b, focusId))
+  const columnPlans: DownPlan[] = []
+  for (const id of getSiblingGroup(index, focusId)) {
+    if (id === focusId || (index.byId.has(id) && claim(b, id))) columnPlans.push(planDown(b, id))
+  }
+
+  const heights = columnPlans.map(heightDown)
+  let top = 0
+  let focusCentre = NODE_H / 2
+  columnPlans.forEach((plan, k) => {
+    const centre = placeDown(b, plan, 0, top, heights[k])
+    if (plan.id === focusId) focusCentre = centre
+    top += heights[k] + ROW_GAP
+  })
+
+  for (const parent of upPlan.parents) {
+    for (const plan of columnPlans) {
+      if (plan.id !== focusId) b.edges.push(descentEdge(plan.id, parent.id))
+    }
+  }
   placeParents(b, upPlan, 1, focusCentre)
 
   return { nodes: b.nodes, edges: b.edges }
