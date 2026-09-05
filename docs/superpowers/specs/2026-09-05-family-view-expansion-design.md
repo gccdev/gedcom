@@ -13,7 +13,8 @@ beside it.
 
 The page still loads the whole graph once with `getFullTreeData()` and indexes it with
 `buildTreeIndex`. Only the layout and the client interaction change. Card styling, the detail
-panel, media signing, auth, and queries are unchanged.
+panel, media signing, auth, and queries are unchanged. `tree-index.ts` gains one accessor,
+`getSiblingGroup`, so the focus column can be drawn in family order.
 
 ## Goals
 
@@ -136,9 +137,11 @@ Place the drawn children in column `c − 1`, stacked within `p`'s band in famil
 sits at the centre of its band.
 
 **Focus column.** The focus's parents form a family unit whose children are the focus and its
-siblings, in family order. The focus column is that unit's children band, laid out by the
-descendant rule with the parents' unit itself not drawn on the left. Siblings are therefore
-ordinary descendant-side roots and need no special case. The ancestor pass hangs off the focus
+siblings, in family order (`getSiblingGroup(index, focusId)`, which returns the child ids of the
+family the focus is a child of, or just the focus when there is none). The focus column is that
+unit's children band, laid out by the descendant rule with the parents' unit itself not drawn on
+the left. Siblings are therefore ordinary descendant-side roots and need no special case, and each
+sibling is joined to the drawn parents by the same parent edges as the focus. The ancestor pass hangs off the focus
 card only, centred on the focus card itself (not the couple or the sibling stack), so ancestors and the sibling stack never compete
 for vertical space: they occupy different columns.
 
@@ -170,15 +173,17 @@ export interface PersonCardData {
 
 - Parent edges: from the child's `right` handle to each drawn parent's `left` handle, type
   `smoothstep`. Two edges from one source render as a bracket with a shared vertical bar.
-- Child edges: from the unit's person `left` handle to each drawn child's `right` handle,
-  `smoothstep`.
+- Child edges: the same shape, from each drawn child's `right` handle to the unit's person `left`
+  handle, `smoothstep`. `left` handles are targets and `right` handles are sources on every card,
+  so all descent edges run from the younger person to the older one.
 - Marriage bar: from the person's `bottom` handle to the spouse's `top` handle, `straight`.
 
 ## Components
 
 | File | Change |
 |---|---|
-| `src/lib/family-layout.ts` (new) | `buildFamilyLayout`, `Expansion`, `defaultExpansion`, constants and `resolveFocusId` moved from `pedigree-layout.ts` |
+| `src/lib/tree-index.ts` | Adds `childFamilyOf` map and `getSiblingGroup(index, id)` |
+| `src/lib/family-layout.ts` (new) | `buildFamilyLayout`, `Expansion`, `defaultExpansion`, `toggleExpansion`, constants and `resolveFocusId` moved from `pedigree-layout.ts` |
 | `src/lib/pedigree-layout.ts` | Removed |
 | `src/components/family-tree.tsx` (renamed from `pedigree-tree.tsx`) | Holds `expansion` state; resets it when `focusId` changes; passes chevron handlers; `fitView` on load, `setCenter` on re-root |
 | `src/components/person-node.tsx` | Two chevron buttons, `data-expand-up` / `data-expand-down`, replacing `data-detail-button` and the `hasMore` marker |
@@ -222,7 +227,8 @@ in the existing vitest `node` environment.
 - A person reachable twice is drawn once
 - `resolveFocusId` behaviour carries over
 
-Existing `tests/tree-index.test.ts` is unchanged.
+`tests/tree-index.test.ts` gains cases for `getSiblingGroup`: family order including the person,
+`[id]` when they are in no family, first family wins.
 
 ## Knock-On Changes
 
