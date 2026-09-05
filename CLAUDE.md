@@ -11,8 +11,8 @@ npm run dev              # Next.js dev server (localhost:3000)
 npm run build            # production build
 npm test                 # vitest, single run
 npm run test:watch       # vitest watch mode
-npx vitest run tests/pedigree-layout.test.ts           # one test file
-npx vitest run -t 'renders the focus person as a personCard flagged isFocus' # one test by name
+npx vitest run tests/family-layout.test.ts             # one test file
+npx vitest run -t 'places the father above the mother' # one test by name
 npm run import-gedcom    # wipe + reimport GEDCOM into Postgres and Blob
 ```
 
@@ -57,14 +57,18 @@ and is imported as `@auth` (path alias, distinct from `@/*` → `src/*`). Middle
 unauthenticated non-`/auth`, non-`/api` requests to `/auth/signin`; `/api` routes are excluded
 there and must therefore check `await auth()` themselves, as every existing route does.
 
-**The tree loads whole, then draws a slice.** `src/app/tree/page.tsx` fetches the entire graph with
-`getFullTreeData()` (~690 individuals) server-side, signs photos, and hands it to the `PedigreeTree`
-client component. `src/lib/tree-index.ts` builds parent/spouse/child lookup maps once;
-`src/lib/pedigree-layout.ts` then draws only the cards around the current focus person — the focus
-and spouse, their children to the left, and three ancestor generations to the right in fixed
-Ahnentafel slots (person *n*'s father is *2n*, mother *2n+1*), so positions are arithmetic rather
-than solved. Both modules are pure and unit-tested without a DOM. Re-rooting is client-side only:
-it calls `window.history.pushState` to set `?focus=<id>`, because `router.push` would re-run the
-server component and reissue the 690-row query on every click.
+**The tree loads whole, then draws a slice that grows in place.** `src/app/tree/page.tsx` fetches
+the entire graph with `getFullTreeData()` (~690 individuals) server-side, signs photos, and hands
+it to the `FamilyTree` client component. `src/lib/tree-index.ts` builds parent/spouse/child/sibling
+lookup maps once; `src/lib/family-layout.ts` then draws only the cards around the current focus
+person, driven by an `Expansion` (two sets of ids: whose parents to draw, whose spouse and
+children to draw). Positions come from a recursive band layout: an expanded person owns a
+vertical band tall enough for what their expansion draws, father above mother on the right,
+children stacked on the left, so expanding one branch pushes only its neighbours. The starting
+state is Ancestry's Family View (siblings, three ancestor generations, two descendant
+generations); chevrons on the card edges toggle expansion. Both modules are pure and unit-tested
+without a DOM. Re-rooting (from the detail panel) is client-side only: it calls
+`window.history.pushState` to set `?focus=<id>`, because `router.push` would re-run the server
+component and reissue the 690-row query.
 
 Design notes and step-by-step plans for both features live in `docs/superpowers/`.

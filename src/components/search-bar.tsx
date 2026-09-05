@@ -47,7 +47,7 @@ export default function SearchBar() {
     setQuery('')
     setResults([])
     setOpen(false)
-    router.push(`/tree?id=${id}`)
+    router.push(`/tree?focus=${id}`)
   }
 
   return (

@@ -31,7 +31,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     return (
       <div className="flex justify-between py-1.5 border-b border-slate-100 last:border-0">
         <span className="text-sm text-slate-500 w-16 shrink-0">{label}</span>
-        <Link href={`/tree?id=${person.id}`} className="text-sm text-indigo-600 hover:underline truncate">
+        <Link href={`/tree?focus=${person.id}`} className="text-sm text-indigo-600 hover:underline truncate">
           {person.fullName}
         </Link>
       </div>

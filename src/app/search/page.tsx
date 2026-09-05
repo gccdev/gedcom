@@ -44,7 +44,7 @@ export default async function SearchPage({
         {results.map(r => (
           <li key={r.id}>
             <Link
-              href={`/tree?id=${r.id}`}
+              href={`/tree?focus=${r.id}`}
               className="block bg-white border border-slate-200 rounded-lg px-4 py-3 hover:border-indigo-300 hover:shadow-sm transition"
             >
               <p className="font-medium text-slate-800 text-sm">{r.fullName}</p>
