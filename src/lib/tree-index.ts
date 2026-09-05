@@ -8,6 +8,7 @@ export interface Parents {
 export interface TreeIndex {
   byId: Map<string, Individual>
   parentsOf: Map<string, Parents>
+  childFamilyOf: Map<string, FamilyRecord>
   spouseFamiliesOf: Map<string, FamilyRecord[]>
   childrenOf: Map<string, string[]>
 }
@@ -18,6 +19,7 @@ const NO_PARENTS: Parents = { fatherId: null, motherId: null }
 export function buildTreeIndex(data: FullTreeData): TreeIndex {
   const byId = new Map(data.individuals.map(i => [i.id, i]))
   const parentsOf = new Map<string, Parents>()
+  const childFamilyOf = new Map<string, FamilyRecord>()
   const spouseFamiliesOf = new Map<string, FamilyRecord[]>()
   const childrenOf = new Map<string, string[]>()
 
@@ -26,6 +28,7 @@ export function buildTreeIndex(data: FullTreeData): TreeIndex {
       // First family wins: a pedigree shows one ancestral line.
       if (!parentsOf.has(childId)) {
         parentsOf.set(childId, { fatherId: fam.husbandId, motherId: fam.wifeId })
+        childFamilyOf.set(childId, fam)
       }
     }
 
@@ -44,7 +47,7 @@ export function buildTreeIndex(data: FullTreeData): TreeIndex {
     }
   }
 
-  return { byId, parentsOf, spouseFamiliesOf, childrenOf }
+  return { byId, parentsOf, childFamilyOf, spouseFamiliesOf, childrenOf }
 }
 
 export function getParents(index: TreeIndex, id: string): Parents {
@@ -63,4 +66,12 @@ export function getSpouseIds(index: TreeIndex, id: string): string[] {
     if (partnerId && !spouseIds.includes(partnerId)) spouseIds.push(partnerId)
   }
   return spouseIds
+}
+
+/**
+ * The person and their siblings in family order (the child ids of the first
+ * family they are a child of), or just the person when they are in none.
+ */
+export function getSiblingGroup(index: TreeIndex, id: string): string[] {
+  return index.childFamilyOf.get(id)?.childIds ?? [id]
 }

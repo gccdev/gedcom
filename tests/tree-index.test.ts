@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildTreeIndex, getParents, getChildIds, getSpouseIds } from '../src/lib/tree-index'
+import { buildTreeIndex, getParents, getChildIds, getSpouseIds, getSiblingGroup } from '../src/lib/tree-index'
 import type { FullTreeData, FamilyRecord, Individual } from '../src/lib/queries'
 
 function person(id: string, sex: 'M' | 'F' = 'M'): Individual {
@@ -65,5 +65,28 @@ describe('buildTreeIndex', () => {
     expect(getParents(index, 'I1')).toEqual({ fatherId: null, motherId: null })
     expect(getChildIds(index, 'I1')).toEqual([])
     expect(getSpouseIds(index, 'I1')).toEqual([])
+  })
+})
+
+describe('getSiblingGroup', () => {
+  it('returns the child ids of the family the person is a child of, in order, including them', () => {
+    const data: FullTreeData = {
+      individuals: [person('FA'), person('MO', 'F'), person('S1'), person('I1'), person('S2', 'F')],
+      families: [family('F1', 'FA', 'MO', ['S1', 'I1', 'S2'])],
+    }
+    expect(getSiblingGroup(buildTreeIndex(data), 'I1')).toEqual(['S1', 'I1', 'S2'])
+  })
+
+  it('returns just the person when they are a child of no family', () => {
+    const data: FullTreeData = { individuals: [person('I1')], families: [] }
+    expect(getSiblingGroup(buildTreeIndex(data), 'I1')).toEqual(['I1'])
+  })
+
+  it('uses the first family when a person is a child in more than one', () => {
+    const data: FullTreeData = {
+      individuals: [person('I1'), person('A'), person('B')],
+      families: [family('F1', 'A', null, ['I1']), family('F2', 'B', null, ['X', 'I1'])],
+    }
+    expect(getSiblingGroup(buildTreeIndex(data), 'I1')).toEqual(['I1'])
   })
 })
