@@ -65,6 +65,8 @@ interface Expansion {
   `down`.
 - Ancestor cards never show a left chevron: aunts, uncles, and cousins are reached by
   re-rooting, not by expansion, which keeps the ancestor side a strict pedigree.
+- Spouse cards show no chevrons at all: the ancestor tree hangs off the focus card only, and a
+  spouse's own family is reached by re-rooting on them.
 - Collapsing a person removes their whole branch. Ids deeper in the branch stay in the set, so
   re-expanding restores the branch as it was.
 - Expansion resets to the starting state on re-root.

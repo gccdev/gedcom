@@ -91,6 +91,7 @@ function PersonNode({ data }: { data: PersonCardData }) {
         <button
           type="button"
           data-expand-down
+          aria-expanded={expandedDown}
           aria-label={`${expandedDown ? 'Hide' : 'Show'} children of ${individual.fullName}`}
           className={`${CHEVRON} -left-3`}
         >
@@ -102,6 +103,7 @@ function PersonNode({ data }: { data: PersonCardData }) {
         <button
           type="button"
           data-expand-up
+          aria-expanded={expandedUp}
           aria-label={`${expandedUp ? 'Hide' : 'Show'} parents of ${individual.fullName}`}
           className={`${CHEVRON} -right-3`}
         >

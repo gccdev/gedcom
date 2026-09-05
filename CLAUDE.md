@@ -57,7 +57,9 @@ media must pass values through `signIndividual` / `signBlobUrl`.
 callbacks) consumed by `src/middleware.ts`; `auth.ts` adds the Postgres adapter and JWT sessions
 and is imported as `@auth` (path alias, distinct from `@/*` → `src/*`). Middleware redirects
 unauthenticated non-`/auth`, non-`/api` requests to `/auth/signin`; `/api` routes are excluded
-there and must therefore check `await auth()` themselves, as every existing route does.
+there and must therefore check `await getSession()` (from `src/lib/session.ts`, which wraps
+`auth()` and the local-only bypass in `src/lib/auth-bypass.ts`) themselves, as every existing
+route does.
 
 **The tree loads whole, then draws a slice that grows in place.** `src/app/tree/page.tsx` fetches
 the entire graph with `getFullTreeData()` (~690 individuals) server-side, signs photos, and hands

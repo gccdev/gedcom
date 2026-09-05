@@ -9,7 +9,7 @@ import { isAuthBypassed } from '@/lib/auth-bypass'
 const { auth } = NextAuth({ ...authConfig, providers: [] })
 
 export default auth((req) => {
-  if (isAuthBypassed()) return
+  if (isAuthBypassed(req.nextUrl.hostname)) return
 
   const isAuthed = !!req.auth
   const isAuthPage = req.nextUrl.pathname.startsWith('/auth')

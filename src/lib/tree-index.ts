@@ -15,7 +15,7 @@ export interface TreeIndex {
 
 const NO_PARENTS: Parents = { fatherId: null, motherId: null }
 
-/** Builds the lookup maps the pedigree layout needs, in one pass over the tree. */
+/** Builds the lookup maps the family layout needs, in one pass over the tree. */
 export function buildTreeIndex(data: FullTreeData): TreeIndex {
   const byId = new Map(data.individuals.map(i => [i.id, i]))
   const parentsOf = new Map<string, Parents>()

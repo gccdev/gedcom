@@ -54,7 +54,8 @@ interface ExpansionState {
 function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
   const searchParams = useSearchParams()
   const index = useMemo(() => buildTreeIndex(data), [data])
-  const focusId = resolveFocusId(index, searchParams.get('focus'), defaultFocusId)
+  // `id` is the legacy parameter, kept so older /tree?id= bookmarks still resolve.
+  const focusId = resolveFocusId(index, searchParams.get('focus') ?? searchParams.get('id'), defaultFocusId)
 
   const [expansionState, setExpansionState] = useState<ExpansionState | null>(null)
   const [rootVersion, setRootVersion] = useState(0)
@@ -101,35 +102,52 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
     window.history.pushState(null, '', `?${params.toString()}`)
   }, [searchParams])
 
+  // One panel request in flight at a time. Closing the panel or re-rooting aborts
+  // it too, so a late response cannot reopen a panel the user just dismissed.
+  const panelRequest = useRef<AbortController | null>(null)
+  const abortPanel = useCallback(() => {
+    panelRequest.current?.abort()
+    panelRequest.current = null
+  }, [])
+
   /**
    * Re-root on `id`, resetting expansion. A new focus re-centres via the
    * effect when the URL changes; re-centring on the current focus bumps
    * rootVersion instead so the effect still fires exactly once.
    */
   const recentre = useCallback((id: string) => {
+    abortPanel()
     setPanelData(null)
     setExpansionState(null)
     if (id === focusId) setRootVersion(v => v + 1)
     else setFocus(id)
-  }, [focusId, setFocus])
+  }, [focusId, setFocus, abortPanel])
 
   const toggle = useCallback((side: 'up' | 'down', id: string) => {
     setExpansionState({ focusId, expansion: toggleExpansion(expansion, side, id) })
   }, [focusId, expansion])
 
   const fetchPanel = useCallback(async (id: string) => {
-    const res = await fetch(`/api/person/${id}`)
-    if (!res.ok) return
-    const detail = await res.json()
-    setPanelData({
-      individual: detail,
-      father: detail.father,
-      mother: detail.mother,
-      spouses: detail.spouses,
-      children: detail.children,
-      media: detail.media,
-    })
-  }, [])
+    abortPanel()
+    const controller = new AbortController()
+    panelRequest.current = controller
+    try {
+      const res = await fetch(`/api/person/${id}`, { signal: controller.signal })
+      if (!res.ok) return
+      const detail = await res.json()
+      setPanelData({
+        individual: detail,
+        father: detail.father,
+        mother: detail.mother,
+        spouses: detail.spouses,
+        children: detail.children,
+        media: detail.media,
+      })
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      console.error(err)
+    }
+  }, [abortPanel])
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (event, node) => {
@@ -166,7 +184,7 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
 
       <PersonPanel
         data={panelData}
-        onClose={() => setPanelData(null)}
+        onClose={() => { abortPanel(); setPanelData(null) }}
         onNavigate={recentre}
       />
     </div>
