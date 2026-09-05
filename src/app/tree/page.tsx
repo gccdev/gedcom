@@ -3,7 +3,7 @@ import { getSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
 import { getFullTreeData } from '@/lib/queries'
 import { signIndividual } from '@/lib/media'
-import PedigreeTree from '@/components/pedigree-tree'
+import FamilyTree from '@/components/family-tree'
 import type { Individual } from '@/lib/queries'
 
 export default async function TreePage() {
@@ -25,7 +25,7 @@ export default async function TreePage() {
   return (
     <div className="w-full h-full">
       <Suspense fallback={<div className="p-8 text-slate-500">Loading tree…</div>}>
-        <PedigreeTree data={signedData} defaultFocusId={defaultFocusId} />
+        <FamilyTree data={signedData} defaultFocusId={defaultFocusId} />
       </Suspense>
     </div>
   )

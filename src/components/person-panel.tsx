@@ -104,7 +104,13 @@ export default function PersonPanel({ data, onClose, onNavigate }: PersonPanelPr
         )}
       </div>
 
-      <div className="px-4 py-3 border-t border-slate-100">
+      <div className="px-4 py-3 border-t border-slate-100 space-y-2">
+        <button
+          onClick={() => onNavigate(individual.id)}
+          className="w-full text-sm bg-indigo-600 text-white hover:bg-indigo-700 font-medium rounded-md py-1.5"
+        >
+          Centre tree here
+        </button>
         <button
           onClick={() => router.push(`/person/${individual.id}`)}
           className="w-full text-sm text-indigo-600 hover:text-indigo-800 font-medium"

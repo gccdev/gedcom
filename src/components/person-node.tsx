@@ -2,7 +2,7 @@
 
 import { memo } from 'react'
 import { Handle, Position } from 'reactflow'
-import { NODE_H, NODE_W, type PersonCardData } from '@/lib/pedigree-layout'
+import { NODE_H, NODE_W, type PersonCardData } from '@/lib/family-layout'
 
 function formatYears(birthDate: string | null, deathDate: string | null): string {
   const birth = birthDate ? birthDate.split(' ').pop() ?? '?' : '?'
@@ -23,8 +23,20 @@ const HIDDEN_HANDLE = {
   border: 'none',
 } as const
 
+const CHEVRON =
+  'absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full border border-slate-300 bg-white ' +
+  'text-slate-500 hover:text-indigo-600 hover:border-indigo-400 text-sm leading-none ' +
+  'flex items-center justify-center shadow-sm'
+
+/*
+  The chevrons carry no onClick by design: the `data-expand-up` and
+  `data-expand-down` attributes are the contract. Clicks bubble to React
+  Flow's node wrapper, where family-tree.tsx's onNodeClick recovers intent
+  via closest('[data-expand-up]') etc. Any other click on the card opens
+  the detail panel.
+*/
 function PersonNode({ data }: { data: PersonCardData }) {
-  const { individual, role, isFocus, hasMore, spouseCount } = data
+  const { individual, isFocus, isSpouse, spouseCount, canExpandUp, expandedUp, canExpandDown, expandedDown } = data
 
   const tint =
     individual.sex === 'M' ? 'bg-sky-50 border-sky-200' :
@@ -59,33 +71,31 @@ function PersonNode({ data }: { data: PersonCardData }) {
         <p className="text-xs text-slate-500 leading-tight">
           {formatYears(individual.birthDate, individual.deathDate)}
         </p>
-        {role === 'spouse' && spouseCount > 1 && (
+        {isSpouse && spouseCount > 1 && (
           <p className="text-[10px] text-slate-400 leading-tight">+{spouseCount - 1} more</p>
         )}
       </div>
 
-      {/*
-        No onClick here by design: the `data-detail-button` attribute is the
-        contract. The click bubbles to React Flow's node wrapper, where
-        pedigree-tree.tsx's onNodeClick recovers intent via
-        closest('[data-detail-button]') to open the panel instead of re-rooting.
-      */}
-      <button
-        type="button"
-        data-detail-button
-        aria-label={`View details for ${individual.fullName}`}
-        className="flex-shrink-0 text-slate-400 hover:text-indigo-600 px-1 text-lg leading-none"
-      >
-        ›
-      </button>
-
-      {hasMore && (
-        <span
-          aria-hidden
-          className="absolute -right-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg leading-none"
+      {canExpandDown && (
+        <button
+          type="button"
+          data-expand-down
+          aria-label={`${expandedDown ? 'Hide' : 'Show'} children of ${individual.fullName}`}
+          className={`${CHEVRON} -left-3`}
         >
-          ›
-        </span>
+          {expandedDown ? '›' : '‹'}
+        </button>
+      )}
+
+      {canExpandUp && (
+        <button
+          type="button"
+          data-expand-up
+          aria-label={`${expandedUp ? 'Hide' : 'Show'} parents of ${individual.fullName}`}
+          className={`${CHEVRON} -right-3`}
+        >
+          {expandedUp ? '‹' : '›'}
+        </button>
       )}
 
       <Handle type="source" id="right" position={Position.Right} style={HIDDEN_HANDLE} />
