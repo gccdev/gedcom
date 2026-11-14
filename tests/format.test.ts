@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatEvent, formatLifespan, formatPlace, yearOf } from '../src/lib/format'
+import { formatEvent, formatLifespan, formatPlace, initials, yearOf } from '../src/lib/format'
 
 describe('formatPlace', () => {
   it('keeps the town and region of a five-slot place', () => {
@@ -43,5 +43,25 @@ describe('formatEvent', () => {
     expect(formatEvent('1990', null)).toBe('1990')
     expect(formatEvent(null, 'Bury,,Lancashire,England,United Kingdom')).toBe('Bury, England')
     expect(formatEvent(null, null)).toBe('')
+  })
+})
+
+describe('formatEvent leading zeros', () => {
+  it('drops the zero from a day but never from a year', () => {
+    expect(formatEvent('06 Sep 1900', null)).toBe('6 Sep 1900')
+    expect(formatEvent('0985', null)).toBe('0985')
+    expect(formatEvent('abt 0985', null)).toBe('abt 0985')
+  })
+})
+
+describe('initials', () => {
+  it('takes the first two words', () => {
+    expect(initials('William Herbert Brooke')).toBe('WH')
+    expect(initials('Brooke')).toBe('B')
+  })
+  it('ignores doubled, leading and trailing spaces', () => {
+    expect(initials('Mary  Brooke')).toBe('MB')
+    expect(initials('  Mary Brooke ')).toBe('MB')
+    expect(initials('')).toBe('')
   })
 })

@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth'
 import { authConfig } from '../auth.config'
 import { isAuthBypassed } from '@/lib/auth-bypass'
+import { isEmailAllowed } from '@/lib/allowlist'
 
 // Providers are dropped here on purpose. Auth.js requires an adapter whenever an
 // email provider is configured, and the edge-safe config has none by design — so
@@ -11,7 +12,7 @@ const { auth } = NextAuth({ ...authConfig, providers: [] })
 export default auth((req) => {
   if (isAuthBypassed(req.nextUrl.hostname)) return
 
-  const isAuthed = !!req.auth
+  const isAuthed = !!req.auth && isEmailAllowed(req.auth.user?.email)
   const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
   const isApi = req.nextUrl.pathname.startsWith('/api')
 

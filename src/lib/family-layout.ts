@@ -196,6 +196,9 @@ function pushCard(
     id,
     type: 'personCard',
     position: { x: columnX(column), y: centreY - NODE_H / 2 },
+    // Fixed size, so React Flow can lay out and fit without measuring the DOM.
+    width: NODE_W,
+    height: NODE_H,
     data: {
       individual,
       isFocus: id === b.focusId,
@@ -352,9 +355,14 @@ export function buildFamilyLayout(
     top += heights[k] + ROW_GAP
   })
 
+  // Join each sibling to the drawn parents that are really theirs. A sibling
+  // can be recorded as a child of an earlier family too, and first family wins
+  // for parentage, so sharing the focus's sibling group is not proof.
   for (const parent of upPlan.parents) {
     for (const plan of columnPlans) {
-      if (plan.id !== focusId) b.edges.push(descentEdge(plan.id, parent.id))
+      if (plan.id === focusId) continue
+      const { fatherId, motherId } = getParents(index, plan.id)
+      if (parent.id === fatherId || parent.id === motherId) b.edges.push(descentEdge(plan.id, parent.id))
     }
   }
   placeParents(b, upPlan, 1, focusCentre)

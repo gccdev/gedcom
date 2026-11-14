@@ -1,4 +1,5 @@
 import { sql } from '@/lib/db'
+import { toLikeTerm } from './search-term'
 
 export interface Individual {
   id: string
@@ -98,15 +99,43 @@ async function getParents(individualId: string): Promise<{ father: Individual | 
   return { father, mother }
 }
 
+/**
+ * Runs `ordered`, which relies on `families.seq` / `family_members.position`.
+ * A database created before those columns existed raises undefined_column
+ * (42703); `unordered` then keeps the site working, in id order, until
+ * scripts/schema.sql is re-run.
+ */
+async function withOrderFallback<T>(ordered: () => Promise<T>, unordered: () => Promise<T>): Promise<T> {
+  try {
+    return await ordered()
+  } catch (err) {
+    if ((err as { code?: string }).code !== '42703') throw err
+    console.warn('[queries] families.seq / family_members.position missing; re-run scripts/schema.sql')
+    return unordered()
+  }
+}
+
+/** Children in GEDCOM order: by family, then by position within the family. */
 async function getChildren(individualId: string): Promise<Individual[]> {
-  const rows = await sql`
-    SELECT DISTINCT fm.individual_id
-    FROM family_members fm
-    JOIN families f ON f.id = fm.family_id
-    WHERE (f.husband_id = ${individualId} OR f.wife_id = ${individualId})
-      AND fm.role = 'child'
-    ORDER BY fm.individual_id
-  `
+  const rows = await withOrderFallback(
+    () => sql`
+      SELECT fm.individual_id
+      FROM family_members fm
+      JOIN families f ON f.id = fm.family_id
+      WHERE (f.husband_id = ${individualId} OR f.wife_id = ${individualId})
+        AND fm.role = 'child'
+      GROUP BY fm.individual_id
+      ORDER BY MIN(f.seq), MIN(fm.position), fm.individual_id
+    `,
+    () => sql`
+      SELECT DISTINCT fm.individual_id
+      FROM family_members fm
+      JOIN families f ON f.id = fm.family_id
+      WHERE (f.husband_id = ${individualId} OR f.wife_id = ${individualId})
+        AND fm.role = 'child'
+      ORDER BY fm.individual_id
+    `,
+  )
   const results = await Promise.all(rows.map(r => fetchIndividual((r as Row).individual_id as string)))
   return results.filter((r): r is Individual => r !== null)
 }
@@ -211,8 +240,9 @@ export async function getPersonDetail(individualId: string): Promise<PersonDetai
   }
 }
 
-export async function searchIndividuals(query: string): Promise<Individual[]> {
-  if (!query.trim()) return []
+export async function searchIndividuals(rawQuery: string): Promise<Individual[]> {
+  const query = toLikeTerm(rawQuery)
+  if (!query) return []
   const rows = await sql`
     SELECT i.id, i.full_name, i.sex, i.birth_date, i.birth_place, i.death_date, i.death_place,
            (SELECT m.blob_url FROM media m WHERE m.individual_id = i.id AND m.media_type = 'photo' LIMIT 1) AS photo_blob_url
@@ -227,7 +257,7 @@ export async function searchIndividuals(query: string): Promise<Individual[]> {
 }
 
 export async function getFullTreeData(): Promise<FullTreeData> {
-  const [individualRows, familyRows, memberRows] = await Promise.all([
+  const [individualRows, [familyRows, memberRows]] = await Promise.all([
     sql`
       SELECT i.id, i.full_name, i.sex, i.birth_date, i.birth_place,
              i.death_date, i.death_place,
@@ -235,8 +265,16 @@ export async function getFullTreeData(): Promise<FullTreeData> {
               WHERE m.individual_id = i.id AND m.media_type = 'photo' LIMIT 1) AS photo_blob_url
       FROM individuals i
     `,
-    sql`SELECT id, husband_id, wife_id FROM families ORDER BY seq, id`,
-    sql`SELECT family_id, individual_id FROM family_members WHERE role = 'child' ORDER BY family_id, position, individual_id`,
+    withOrderFallback(
+      () => Promise.all([
+        sql`SELECT id, husband_id, wife_id FROM families ORDER BY seq, id`,
+        sql`SELECT family_id, individual_id FROM family_members WHERE role = 'child' ORDER BY family_id, position, individual_id`,
+      ]),
+      () => Promise.all([
+        sql`SELECT id, husband_id, wife_id FROM families ORDER BY id`,
+        sql`SELECT family_id, individual_id FROM family_members WHERE role = 'child' ORDER BY family_id, individual_id`,
+      ]),
+    ),
   ])
 
   const childIds = new Map<string, string[]>()
@@ -259,4 +297,23 @@ export async function getFullTreeData(): Promise<FullTreeData> {
       }
     }),
   }
+}
+
+/**
+ * True when a magic link was issued to `email` within the last `windowSeconds`.
+ * The token table stores only the expiry, so the issue time is the expiry less
+ * the link lifetime.
+ */
+export async function hasRecentSignInEmail(
+  email: string,
+  windowSeconds: number,
+  linkLifetimeSeconds: number,
+): Promise<boolean> {
+  const rows = await sql`
+    SELECT 1 FROM verification_token
+    WHERE identifier = ${email.trim().toLowerCase()}
+      AND expires > now() + make_interval(secs => ${linkLifetimeSeconds - windowSeconds})
+    LIMIT 1
+  `
+  return rows.length > 0
 }

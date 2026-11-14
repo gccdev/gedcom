@@ -36,8 +36,9 @@ CREATE TABLE IF NOT EXISTS family_members (
 
 -- Additive migrations for databases created before GEDCOM order was persisted.
 -- `families.seq` is the family's position in the GEDCOM file; `family_members.position`
--- is the child's position within its family. Both default to 0, so an un-migrated
--- database still reads correctly (it just falls back to the id tiebreak).
+-- is the child's position within its family. Both default to 0, so a database that has
+-- these columns but has not been re-imported still reads correctly (id tiebreak). A database
+-- without the columns at all is handled by withOrderFallback in src/lib/queries.ts.
 ALTER TABLE families ADD COLUMN IF NOT EXISTS seq INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE family_members ADD COLUMN IF NOT EXISTS position INTEGER NOT NULL DEFAULT 0;
 

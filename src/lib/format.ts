@@ -38,5 +38,10 @@ export function formatLifespan(birthDate: string | null, deathDate: string | nul
 
 /** One card line for a life event: "6 Sep 1900 · Manchester, England". */
 export function formatEvent(date: string | null, place: string | null): string {
-  return [date?.trim().replace(/^0(\d)/, '$1'), formatPlace(place)].filter(Boolean).join(' · ')
+  return [date?.trim().replace(/^0(\d)(?=\s)/, '$1'), formatPlace(place)].filter(Boolean).join(' · ')
+}
+
+/** Up to two initials for the photo placeholder, ignoring stray whitespace. */
+export function initials(fullName: string): string {
+  return fullName.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join('')
 }

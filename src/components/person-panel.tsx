@@ -22,20 +22,23 @@ interface PersonPanelData {
 interface PersonPanelProps {
   data: PersonPanelData | null
   onClose: () => void
-  onNavigate: (id: string) => void
+  /** Show another person's details in the panel. */
+  onSelect: (id: string) => void
+  /** Re-root the tree on a person. */
+  onCentre: (id: string) => void
 }
 
-function FamilyLink({ person, label, onNavigate }: {
+function FamilyLink({ person, label, onSelect }: {
   person: Individual | null
   label: string
-  onNavigate: (id: string) => void
+  onSelect: (id: string) => void
 }) {
   if (!person) return null
   return (
     <div className="flex justify-between items-center py-1">
       <span className="text-xs text-slate-500 w-16 shrink-0">{label}</span>
       <button
-        onClick={() => onNavigate(person.id)}
+        onClick={() => onSelect(person.id)}
         className="text-xs text-indigo-600 hover:underline truncate text-right"
       >
         {person.fullName}
@@ -44,7 +47,7 @@ function FamilyLink({ person, label, onNavigate }: {
   )
 }
 
-export default function PersonPanel({ data, onClose, onNavigate }: PersonPanelProps) {
+export default function PersonPanel({ data, onClose, onSelect, onCentre }: PersonPanelProps) {
   const router = useRouter()
   if (!data) return null
   const { individual, father, mother, spouses, children, media } = data
@@ -75,10 +78,10 @@ export default function PersonPanel({ data, onClose, onNavigate }: PersonPanelPr
         {(father || mother || spouses.length > 0 || children.length > 0) && (
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Family</p>
-            <FamilyLink person={father} label="Father" onNavigate={onNavigate} />
-            <FamilyLink person={mother} label="Mother" onNavigate={onNavigate} />
-            {spouses.map(s => <FamilyLink key={s.id} person={s} label="Spouse" onNavigate={onNavigate} />)}
-            {children.slice(0, 5).map(c => <FamilyLink key={c.id} person={c} label="Child" onNavigate={onNavigate} />)}
+            <FamilyLink person={father} label="Father" onSelect={onSelect} />
+            <FamilyLink person={mother} label="Mother" onSelect={onSelect} />
+            {spouses.map(s => <FamilyLink key={s.id} person={s} label="Spouse" onSelect={onSelect} />)}
+            {children.slice(0, 5).map(c => <FamilyLink key={c.id} person={c} label="Child" onSelect={onSelect} />)}
             {children.length > 5 && (
               <p className="text-xs text-slate-400 text-right">+{children.length - 5} more</p>
             )}
@@ -106,7 +109,7 @@ export default function PersonPanel({ data, onClose, onNavigate }: PersonPanelPr
 
       <div className="px-4 py-3 border-t border-slate-100 space-y-2">
         <button
-          onClick={() => onNavigate(individual.id)}
+          onClick={() => onCentre(individual.id)}
           className="w-full text-sm bg-indigo-600 text-white hover:bg-indigo-700 font-medium rounded-md py-1.5"
         >
           Centre tree here

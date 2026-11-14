@@ -42,3 +42,7 @@ next-env.d.ts
 
 # superpowers scratch
 /.superpowers/
+
+# private family data and editor settings
+/7.0.3/
+/.idea/

@@ -18,7 +18,7 @@ One-time DB setup (no script wraps it):
 additive column migrations, so re-running it brings an existing database up to date.
 
 Env lives in `.env.local`; see `.env.example` for the required keys
-(`DATABASE_URL`, `AUTH_SECRET`, `AUTH_RESEND_KEY`, `RESEND_FROM`, `BLOB_READ_WRITE_TOKEN`,
+(`DATABASE_URL`, `AUTH_SECRET`, `AUTH_ALLOWED_EMAILS`, `AUTH_RESEND_KEY`, `RESEND_FROM`, `BLOB_READ_WRITE_TOKEN`,
 `DEFAULT_ROOT_PERSON_ID`).
 
 ## Architecture
@@ -44,7 +44,8 @@ tagged template) for app queries and `pool` (WebSocket pool) solely for the Auth
 **Media never reaches the client as a raw blob URL.** Blobs are private, and `@vercel/blob` v2 has
 no signed-URL API, so `src/lib/media.ts` rewrites every `photoBlobUrl` to
 `/api/media?url=...`. `src/app/api/media/route.ts` is the session-gated proxy and validates the
-hostname against `*.public.blob.vercel-storage.com` to block SSRF. Any new surface that returns
+URL against the Vercel Blob store hosts (`*.private.` and `*.public.blob.vercel-storage.com`) to
+block SSRF, then serves only image and PDF types inline; `src/lib/media-response.ts` holds both rules. Any new surface that returns
 media must pass values through `signIndividual` / `signBlobUrl`.
 
 **Auth is split for the Edge.** `auth.config.ts` is the Node-free config (providers, pages,
@@ -53,7 +54,11 @@ and is imported as `@auth` (path alias, distinct from `@/*` → `src/*`). Middle
 unauthenticated non-`/auth`, non-`/api` requests to `/auth/signin`; `/api` routes are excluded
 there and must therefore check `await getSession()` (from `src/lib/session.ts`, which wraps
 `auth()` and the local-only bypass in `src/lib/auth-bypass.ts`) themselves, as every existing
-route does.
+route does. Sign-in is closed by default: `src/lib/allowlist.ts` reads
+`AUTH_ALLOWED_EMAILS`, and the `signIn` callback, the proxy and `getSession()` all check it, so an
+unlisted address gets no email and an existing session for a removed address stops working. The
+bypass only activates under `npm run dev` / `npm start`, which bind to 127.0.0.1 and set
+`AUTH_BYPASS_BIND=loopback`; its Host check is not a network boundary.
 
 **The tree loads whole, then draws a slice that grows in place.** `src/app/tree/page.tsx` fetches
 the entire graph with `getFullTreeData()` (~690 individuals) server-side, signs photos, and hands

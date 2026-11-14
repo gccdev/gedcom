@@ -3,11 +3,7 @@
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { NODE_H, NODE_W, type PersonCardData } from '@/lib/family-layout'
-import { formatEvent, formatLifespan } from '@/lib/format'
-
-function initials(fullName: string): string {
-  return fullName.split(' ').map(word => word[0]).slice(0, 2).join('')
-}
+import { formatEvent, formatLifespan, initials } from '@/lib/format'
 
 const HIDDEN_HANDLE = {
   opacity: 0,

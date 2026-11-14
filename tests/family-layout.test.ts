@@ -490,3 +490,29 @@ describe('bulk expansion', () => {
     expect(expandAllDescendants(idx, 'nobody', open).down).toEqual(new Set(['Y']))
   })
 })
+
+describe('sibling edges', () => {
+  const people = ['K', 'S', 'FA', 'MO', 'OTHER'].map(id => ({
+    id, fullName: id, sex: 'M', birthDate: null, birthPlace: null,
+    deathDate: null, deathPlace: null, photoBlobUrl: null,
+  }))
+  // S is recorded first as a child of OTHER, so OTHER is S's parent even though
+  // S also appears in K's family and therefore in K's sibling group.
+  const families = [
+    { id: 'F0', husbandId: 'OTHER', wifeId: null, childIds: ['S'] },
+    { id: 'F1', husbandId: 'FA', wifeId: 'MO', childIds: ['K', 'S'] },
+  ]
+  const idx = buildTreeIndex({ individuals: people, families })
+
+  it('does not join a sibling to parents that are not theirs', () => {
+    const { nodes, edges } = buildFamilyLayout(idx, 'K', defaultExpansion(idx, 'K'))
+    expect(nodes.map(n => n.id)).toEqual(expect.arrayContaining(['K', 'S', 'FA', 'MO']))
+    expect(edges.some(e => e.source === 'K' && e.target === 'FA')).toBe(true)
+    expect(edges.some(e => e.source === 'S')).toBe(false)
+  })
+
+  it('gives every card a fixed size', () => {
+    const { nodes } = buildFamilyLayout(idx, 'K', defaultExpansion(idx, 'K'))
+    expect(nodes.every(n => n.width === NODE_W && n.height === NODE_H)).toBe(true)
+  })
+})
