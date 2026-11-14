@@ -130,9 +130,9 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
     else setFocus(id)
   }, [focusId, setFocus, abortPanel])
 
-  const toggle = useCallback((side: 'up' | 'down', id: string) => {
-    // Children are expand-only: there is no control that hides them again.
-    if (side === 'down' && expansion.down.has(id)) return
+  const expand = useCallback((side: 'up' | 'down', id: string) => {
+    // Expand-only: no control hides parents or children again.
+    if (expansion[side].has(id)) return
     setExpansionState({ focusId, expansion: toggleExpansion(expansion, side, id) })
   }, [focusId, expansion])
 
@@ -175,16 +175,16 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
     (event, node) => {
       const target = event.target as HTMLElement
       if (target.closest('[data-expand-up]')) {
-        toggle('up', node.id)
+        expand('up', node.id)
       } else if (target.closest('[data-expand-down]')) {
-        toggle('down', node.id)
+        expand('down', node.id)
       } else if (target.closest('[data-refocus]')) {
         recentre(node.id)
       } else {
         fetchPanel(node.id)
       }
     },
-    [toggle, recentre, fetchPanel],
+    [expand, recentre, fetchPanel],
   )
 
   return (

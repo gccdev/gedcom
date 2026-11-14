@@ -18,7 +18,6 @@ const BUTTON =
   'h-6 px-2 rounded border text-[11px] font-medium leading-none whitespace-nowrap ' +
   'flex items-center gap-1 transition-colors'
 const BUTTON_CLOSED = 'border-slate-300 bg-white text-slate-700 hover:border-indigo-400 hover:text-indigo-700'
-const BUTTON_OPEN = 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
 
 function EventLine({ label, text }: { label: string; text: string }) {
   return (
@@ -96,7 +95,7 @@ function PersonNode({ data }: { data: PersonCardData }) {
       />
 
       <div className="mt-auto flex items-center gap-1.5">
-        {/* Children only open; once drawn they stay until Reset or a new focus. */}
+        {/* Both buttons only open; what they draw stays until Reset or a new focus. */}
         {canExpandDown && !expandedDown && (
           <button
             type="button"
@@ -121,16 +120,15 @@ function PersonNode({ data }: { data: PersonCardData }) {
           </button>
         )}
 
-        {canExpandUp && (
+        {canExpandUp && !expandedUp && (
           <button
             type="button"
             data-expand-up
-            aria-expanded={expandedUp}
-            aria-label={`${expandedUp ? 'Hide' : 'Show'} parents of ${individual.fullName}`}
-            className={`${BUTTON} ${expandedUp ? BUTTON_OPEN : BUTTON_CLOSED} ml-auto`}
+            aria-label={`Show parents of ${individual.fullName}`}
+            className={`${BUTTON} ${BUTTON_CLOSED} ml-auto`}
           >
-            {expandedUp ? 'Hide parents' : 'Parents'}
-            <span aria-hidden>{expandedUp ? '−' : '▸'}</span>
+            Parents
+            <span aria-hidden>▸</span>
           </button>
         )}
       </div>
