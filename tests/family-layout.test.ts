@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildTreeIndex } from '../src/lib/tree-index'
 import {
-  buildFamilyLayout, defaultExpansion, resolveFocusId, toggleExpansion,
+  buildFamilyLayout, defaultExpansion, expandAllAncestors, expandAllDescendants, resolveFocusId, toggleExpansion,
   NODE_W, NODE_H, COL_GAP, ROW_GAP, MARRIAGE_GAP, COUPLE_H,
 } from '../src/lib/family-layout'
 import type { Expansion } from '../src/lib/family-layout'
@@ -450,5 +450,43 @@ describe('buildFamilyLayout siblings', () => {
   it('draws only the focus in column 0 when they have no recorded parents', () => {
     const { nodes } = layout({ individuals: [person('I1')], families: [] }, 'I1')
     expect(nodes.map(n => n.id)).toEqual(['I1'])
+  })
+})
+
+describe('bulk expansion', () => {
+  const people = ['K', 'P', 'GP', 'GGP', 'C', 'GC'].map(id => ({
+    id, fullName: id, sex: 'M', birthDate: null, birthPlace: null,
+    deathDate: null, deathPlace: null, photoBlobUrl: null,
+  }))
+  const families = [
+    { id: 'F1', husbandId: 'GGP', wifeId: null, childIds: ['GP'] },
+    { id: 'F2', husbandId: 'GP', wifeId: null, childIds: ['P'] },
+    { id: 'F3', husbandId: 'P', wifeId: null, childIds: ['K'] },
+    { id: 'F4', husbandId: 'K', wifeId: null, childIds: ['C'] },
+    { id: 'F5', husbandId: 'C', wifeId: null, childIds: ['GC'] },
+  ]
+  const idx = buildTreeIndex({ individuals: people, families })
+  const empty = { up: new Set<string>(), down: new Set<string>() }
+
+  it('opens every ancestor that has parents', () => {
+    const { up, down } = expandAllAncestors(idx, 'K', empty)
+    expect([...up].sort()).toEqual(['GP', 'K', 'P'])
+    expect(down.size).toBe(0)
+    const ids = buildFamilyLayout(idx, 'K', { up, down }).nodes.map(n => n.id)
+    expect(ids).toContain('GGP')
+  })
+
+  it('opens every descendant', () => {
+    const { up, down } = expandAllDescendants(idx, 'K', empty)
+    expect([...down].sort()).toEqual(['C', 'GC', 'K'])
+    expect(up.size).toBe(0)
+    const ids = buildFamilyLayout(idx, 'K', { up, down }).nodes.map(n => n.id)
+    expect(ids).toContain('GC')
+  })
+
+  it('keeps what was already open and ignores an unknown focus', () => {
+    const open = { up: new Set(['X']), down: new Set(['Y']) }
+    expect(expandAllAncestors(idx, 'K', open).up.has('X')).toBe(true)
+    expect(expandAllDescendants(idx, 'nobody', open).down).toEqual(new Set(['Y']))
   })
 })

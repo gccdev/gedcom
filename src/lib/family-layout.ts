@@ -3,8 +3,8 @@ import type { Individual } from './queries'
 import type { TreeIndex } from './tree-index'
 import { getChildIds, getParents, getSiblingGroup, getSpouseIds } from './tree-index'
 
-export const NODE_W = 220
-export const NODE_H = 72
+export const NODE_W = 264
+export const NODE_H = 136
 export const COL_GAP = 80
 export const ROW_GAP = 16
 export const MARRIAGE_GAP = 12
@@ -65,6 +65,37 @@ export function defaultExpansion(index: TreeIndex, focusId: string): Expansion {
   return { up, down }
 }
 
+/** Every ancestor of `focusId` expanded upward, on top of what is already open. */
+export function expandAllAncestors(index: TreeIndex, focusId: string, expansion: Expansion): Expansion {
+  const up = new Set(expansion.up)
+  const seen = new Set<string>()
+  const queue = index.byId.has(focusId) ? [focusId] : []
+  while (queue.length > 0) {
+    const id = queue.pop() as string
+    if (seen.has(id)) continue
+    seen.add(id)
+    const parents = drawableParents(index, id)
+    if (parents.length > 0) up.add(id)
+    queue.push(...parents)
+  }
+  return { ...expansion, up }
+}
+
+/** Every descendant of `focusId` expanded downward, on top of what is already open. */
+export function expandAllDescendants(index: TreeIndex, focusId: string, expansion: Expansion): Expansion {
+  const down = new Set(expansion.down)
+  const seen = new Set<string>()
+  const queue = index.byId.has(focusId) ? [focusId] : []
+  while (queue.length > 0) {
+    const id = queue.pop() as string
+    if (seen.has(id)) continue
+    seen.add(id)
+    down.add(id)
+    queue.push(...drawableChildren(index, id))
+  }
+  return { ...expansion, down }
+}
+
 /** Returns a new Expansion with `id` added to or removed from one side. */
 export function toggleExpansion(expansion: Expansion, side: 'up' | 'down', id: string): Expansion {
   const next = new Set(expansion[side])
@@ -80,12 +111,14 @@ export interface PersonCardData {
   isSpouse: boolean
   /** Number of spouses the partner has; only meaningful on a spouse card. */
   spouseCount: number
-  /** Right chevron shown. */
+  /** Parents button shown. */
   canExpandUp: boolean
   expandedUp: boolean
-  /** Left chevron shown. */
+  /** Children button shown. */
   canExpandDown: boolean
   expandedDown: boolean
+  /** Children this person has in the tree, for the button label. */
+  childCount: number
 }
 
 // ---------------------------------------------------------------------------
@@ -172,6 +205,7 @@ function pushCard(
       expandedUp: false,
       canExpandDown: false,
       expandedDown: false,
+      childCount: drawableChildren(b.index, id).length,
       ...flags,
     },
   })

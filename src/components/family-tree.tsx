@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import ReactFlow, {
   Background,
   Controls,
+  Panel,
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
@@ -16,13 +17,18 @@ import PersonNode from './person-node'
 import PersonPanel from './person-panel'
 import { buildTreeIndex } from '@/lib/tree-index'
 import {
-  NODE_H, NODE_W, buildFamilyLayout, defaultExpansion, resolveFocusId, toggleExpansion,
+  NODE_H, NODE_W, buildFamilyLayout, defaultExpansion, expandAllAncestors, expandAllDescendants,
+  resolveFocusId, toggleExpansion,
 } from '@/lib/family-layout'
 import type { Expansion } from '@/lib/family-layout'
 import type { FullTreeData, Individual } from '@/lib/queries'
 
 const nodeTypes = { personCard: PersonNode }
 const FIT_VIEW_OPTIONS = { maxZoom: 1, padding: 0.1 }
+
+const TOOLBAR_BUTTON =
+  'h-8 px-3 rounded-md border border-slate-300 bg-white text-xs font-medium text-slate-700 shadow-sm ' +
+  'hover:border-indigo-400 hover:text-indigo-700'
 
 interface PanelMedia {
   id: number
@@ -67,15 +73,26 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(layout.edges)
   const [panelData, setPanelData] = useState<PanelData | null>(null)
-  const { setCenter } = useReactFlow()
+  const focusPerson = index.byId.get(focusId)
+  const { setCenter, fitView } = useReactFlow()
 
   // Sync the layout into React Flow. Ease to the focus only when the root
   // changed (a new focus or an explicit re-centre); expansion leaves the
   // viewport alone. The first render is handled by the fitView prop.
   const lastRoot = useRef<string | null>(null)
+  const fitAfterSync = useRef(false)
   useEffect(() => {
     setNodes(layout.nodes)
     setEdges(layout.edges)
+
+    // A toolbar action can add many cards at once, so bring them all into view
+    // once React Flow has taken the new nodes.
+    if (fitAfterSync.current) {
+      fitAfterSync.current = false
+      const timer = window.setTimeout(() => fitView({ ...FIT_VIEW_OPTIONS, duration: 400 }), 50)
+      lastRoot.current = `${focusId}:${rootVersion}`
+      return () => window.clearTimeout(timer)
+    }
 
     const root = `${focusId}:${rootVersion}`
     if (lastRoot.current === null) {
@@ -93,7 +110,7 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
         { zoom: 1, duration: 400 },
       )
     }
-  }, [layout, focusId, rootVersion, setNodes, setEdges, setCenter])
+  }, [layout, focusId, rootVersion, setNodes, setEdges, setCenter, fitView])
 
   const setFocus = useCallback((id: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -127,6 +144,19 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
     setExpansionState({ focusId, expansion: toggleExpansion(expansion, side, id) })
   }, [focusId, expansion])
 
+  const expandAll = useCallback((side: 'up' | 'down') => {
+    fitAfterSync.current = true
+    const next = side === 'up'
+      ? expandAllAncestors(index, focusId, expansion)
+      : expandAllDescendants(index, focusId, expansion)
+    setExpansionState({ focusId, expansion: next })
+  }, [index, focusId, expansion])
+
+  const resetView = useCallback(() => {
+    fitAfterSync.current = true
+    setExpansionState({ focusId, expansion: defaultExpansion(index, focusId) })
+  }, [index, focusId])
+
   const fetchPanel = useCallback(async (id: string) => {
     abortPanel()
     const controller = new AbortController()
@@ -156,11 +186,13 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
         toggle('up', node.id)
       } else if (target.closest('[data-expand-down]')) {
         toggle('down', node.id)
+      } else if (target.closest('[data-refocus]')) {
+        recentre(node.id)
       } else {
         fetchPanel(node.id)
       }
     },
-    [toggle, fetchPanel],
+    [toggle, recentre, fetchPanel],
   )
 
   return (
@@ -174,12 +206,28 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={FIT_VIEW_OPTIONS}
-        minZoom={0.2}
+        minZoom={0.05}
         maxZoom={2}
         nodesDraggable={false}
       >
         <Background />
         <Controls />
+        <Panel position="top-left">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white/95 p-2 shadow-sm">
+            <span className="px-1 text-xs text-slate-500">
+              {focusPerson?.fullName ?? 'Tree'} · {layout.nodes.length} shown
+            </span>
+            <button type="button" className={TOOLBAR_BUTTON} onClick={() => expandAll('up')}>
+              Show all ancestors
+            </button>
+            <button type="button" className={TOOLBAR_BUTTON} onClick={() => expandAll('down')}>
+              Show all descendants
+            </button>
+            <button type="button" className={TOOLBAR_BUTTON} onClick={resetView}>
+              Reset
+            </button>
+          </div>
+        </Panel>
       </ReactFlow>
 
       <PersonPanel

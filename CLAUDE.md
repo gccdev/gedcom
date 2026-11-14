@@ -7,12 +7,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev              # Next.js dev server (localhost:3000)
-npm run build            # production build
-npm test                 # vitest, single run
-npm run test:watch       # vitest watch mode
-npx vitest run tests/family-layout.test.ts             # one test file
-npx vitest run -t 'places the father above the mother' # one test by name
 npm run import-gedcom    # wipe + reimport GEDCOM into Postgres and Blob
 ```
 
@@ -70,7 +64,7 @@ children to draw). Positions come from a recursive band layout: an expanded pers
 vertical band tall enough for what their expansion draws, father above mother on the right,
 children stacked on the left, so expanding one branch pushes only its neighbours. The starting
 state is Ancestry's Family View (siblings, three ancestor generations, two descendant
-generations); chevrons on the card edges toggle expansion. Both modules are pure and unit-tested
+generations). Each card shows name, lifespan, and birth and death date and place (shortened by `src/lib/format.ts`), with Parents / Children buttons that toggle expansion and a Focus button that re-roots; a toolbar opens all ancestors or descendants of the focus at once. Both modules are pure and unit-tested
 without a DOM. Re-rooting (from the detail panel) is client-side only: it calls
 `window.history.pushState` to set `?focus=<id>`, because `router.push` would re-run the server
 component and reissue the 690-row query.
