@@ -131,6 +131,8 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
   }, [focusId, setFocus, abortPanel])
 
   const toggle = useCallback((side: 'up' | 'down', id: string) => {
+    // Children are expand-only: there is no control that hides them again.
+    if (side === 'down' && expansion.down.has(id)) return
     setExpansionState({ focusId, expansion: toggleExpansion(expansion, side, id) })
   }, [focusId, expansion])
 

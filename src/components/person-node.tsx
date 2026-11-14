@@ -96,16 +96,16 @@ function PersonNode({ data }: { data: PersonCardData }) {
       />
 
       <div className="mt-auto flex items-center gap-1.5">
-        {canExpandDown && (
+        {/* Children only open; once drawn they stay until Reset or a new focus. */}
+        {canExpandDown && !expandedDown && (
           <button
             type="button"
             data-expand-down
-            aria-expanded={expandedDown}
-            aria-label={`${expandedDown ? 'Hide' : 'Show'} spouse and children of ${individual.fullName}`}
-            className={`${BUTTON} ${expandedDown ? BUTTON_OPEN : BUTTON_CLOSED}`}
+            aria-label={`Show spouse and children of ${individual.fullName}`}
+            className={`${BUTTON} ${BUTTON_CLOSED}`}
           >
-            <span aria-hidden>{expandedDown ? '−' : '◂'}</span>
-            {expandedDown ? 'Hide children' : `Children (${childCount})`}
+            <span aria-hidden>◂</span>
+            {`Children (${childCount})`}
           </button>
         )}
 
