@@ -1,4 +1,4 @@
-import type { Node, Edge } from 'reactflow'
+import type { Node, Edge } from '@xyflow/react'
 import type { Individual } from './queries'
 import type { TreeIndex } from './tree-index'
 import { getChildIds, getParents, getSiblingGroup, getSpouseIds } from './tree-index'
@@ -104,7 +104,7 @@ export function toggleExpansion(expansion: Expansion, side: 'up' | 'down', id: s
   return { ...expansion, [side]: next }
 }
 
-export interface PersonCardData {
+export type PersonCardData = {
   individual: Individual
   isFocus: boolean
   /** Drawn as the lower half of a couple. */

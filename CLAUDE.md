@@ -32,7 +32,7 @@ part), TRUNCATEs `individuals`, `families`, and `users`, uploads `7.0.3/Brooke/B
 Vercel Blob with `access: 'private'`, then inserts. GEDCOM IDs are the primary keys throughout, so
 `DEFAULT_ROOT_PERSON_ID` is a raw GEDCOM ID. Family and child order from the GEDCOM is persisted
 in `families.seq` and `family_members.position`; the tree relies on it. The scripts run under
-`tsconfig.scripts.json` (CommonJS + ts-node) and need `neonConfig.webSocketConstructor = ws` —
+`tsx` (type-checked by `tsconfig.scripts.json`) and need `neonConfig.webSocketConstructor = ws` —
 anything touching `Pool` outside the Next runtime does.
 
 **Data access is centralised in `src/lib/queries.ts`.** It is the only module that imports `sql`
@@ -48,7 +48,7 @@ hostname against `*.public.blob.vercel-storage.com` to block SSRF. Any new surfa
 media must pass values through `signIndividual` / `signBlobUrl`.
 
 **Auth is split for the Edge.** `auth.config.ts` is the Node-free config (providers, pages,
-callbacks) consumed by `src/middleware.ts`; `auth.ts` adds the Postgres adapter and JWT sessions
+callbacks) consumed by `src/proxy.ts` (Next 16 name for middleware); `auth.ts` adds the Postgres adapter and JWT sessions
 and is imported as `@auth` (path alias, distinct from `@/*` → `src/*`). Middleware redirects
 unauthenticated non-`/auth`, non-`/api` requests to `/auth/signin`; `/api` routes are excluded
 there and must therefore check `await getSession()` (from `src/lib/session.ts`, which wraps

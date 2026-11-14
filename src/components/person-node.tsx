@@ -1,7 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, Position } from 'reactflow'
+import { Handle, Position } from '@xyflow/react'
 import { NODE_H, NODE_W, type PersonCardData } from '@/lib/family-layout'
 import { formatEvent, formatLifespan } from '@/lib/format'
 

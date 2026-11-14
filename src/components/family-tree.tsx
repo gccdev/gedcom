@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import ReactFlow, {
+import {
+  ReactFlow,
   Background,
   Controls,
   Panel,
@@ -10,9 +11,9 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
   useReactFlow,
-} from 'reactflow'
-import type { NodeMouseHandler } from 'reactflow'
-import 'reactflow/dist/style.css'
+} from '@xyflow/react'
+import type { NodeMouseHandler } from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
 import PersonNode from './person-node'
 import PersonPanel from './person-panel'
 import { buildTreeIndex } from '@/lib/tree-index'
