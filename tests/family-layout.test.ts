@@ -516,3 +516,27 @@ describe('sibling edges', () => {
     expect(nodes.every(n => n.width === NODE_W && n.height === NODE_H)).toBe(true)
   })
 })
+
+describe('relative counts on a card', () => {
+  const people = ['K', 'W', 'FA', 'C'].map(id => ({
+    id, fullName: id, sex: 'M', birthDate: null, birthPlace: null,
+    deathDate: null, deathPlace: null, photoBlobUrl: null,
+  }))
+  const families = [
+    { id: 'F1', husbandId: 'FA', wifeId: null, childIds: ['K'] },
+    { id: 'F2', husbandId: 'K', wifeId: 'W', childIds: ['C'] },
+  ]
+  const idx = buildTreeIndex({ individuals: people, families })
+  const { nodes } = buildFamilyLayout(idx, 'K', defaultExpansion(idx, 'K'))
+  const counts = (id: string) => {
+    const { parentCount, childCount } = node(nodes, id).data
+    return { parentCount, childCount }
+  }
+
+  it('counts parents and children whether or not they are drawn', () => {
+    expect(counts('K')).toEqual({ parentCount: 1, childCount: 1 })
+    expect(counts('FA')).toEqual({ parentCount: 0, childCount: 1 })
+    expect(counts('C')).toEqual({ parentCount: 2, childCount: 0 })
+    expect(counts('W')).toEqual({ parentCount: 0, childCount: 1 })
+  })
+})

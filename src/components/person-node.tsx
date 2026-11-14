@@ -57,7 +57,7 @@ function EventLine({ label, text }: { label: string; text: string }) {
 function PersonNode({ data }: { data: PersonCardData }) {
   const {
     individual, isFocus, isSpouse, spouseCount,
-    canExpandUp, expandedUp, canExpandDown, expandedDown, childCount,
+    canExpandUp, expandedUp, canExpandDown, expandedDown, childCount, parentCount,
   } = data
 
   const tint =
@@ -96,8 +96,12 @@ function PersonNode({ data }: { data: PersonCardData }) {
             {isSpouse && <span className="text-slate-400"> · spouse{spouseCount > 1 ? ` (1 of ${spouseCount})` : ''}</span>}
           </p>
         </div>
-        {/* Sits apart from the expand buttons: it redraws the tree around this person. */}
-        {!isFocus && (
+        {/*
+          Sits apart from the expand buttons: it redraws the tree around this
+          person. Offered only when they have parents or children to show;
+          otherwise their own tree would be just them and a spouse.
+        */}
+        {!isFocus && (parentCount > 0 || childCount > 0) && (
           <button
             type="button"
             data-refocus

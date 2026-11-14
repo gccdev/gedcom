@@ -119,6 +119,8 @@ export type PersonCardData = {
   expandedDown: boolean
   /** Children this person has in the tree, for the button label. */
   childCount: number
+  /** Parents this person has in the tree (0 to 2), whether or not they are drawn. */
+  parentCount: number
 }
 
 // ---------------------------------------------------------------------------
@@ -209,6 +211,7 @@ function pushCard(
       canExpandDown: false,
       expandedDown: false,
       childCount: drawableChildren(b.index, id).length,
+      parentCount: drawableParents(b.index, id).length,
       ...flags,
     },
   })
