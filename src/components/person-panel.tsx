@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import type { Individual } from '@/lib/queries'
+import { TreeIcon } from './person-node'
 
 interface PanelMedia {
   id: number
@@ -110,9 +111,10 @@ export default function PersonPanel({ data, onClose, onSelect, onCentre }: Perso
       <div className="px-4 py-3 border-t border-slate-100 space-y-2">
         <button
           onClick={() => onCentre(individual.id)}
-          className="w-full text-sm bg-indigo-600 text-white hover:bg-indigo-700 font-medium rounded-md py-1.5"
+          className="w-full text-sm bg-indigo-600 text-white hover:bg-indigo-700 font-medium rounded-md py-1.5 flex items-center justify-center gap-2"
         >
-          Centre tree here
+          <TreeIcon className="w-4 h-4" />
+          View tree
         </button>
         <button
           onClick={() => router.push(`/person/${individual.id}`)}

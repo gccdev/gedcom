@@ -19,6 +19,22 @@ const BUTTON =
   'flex items-center gap-1 transition-colors'
 const BUTTON_CLOSED = 'border-slate-300 bg-white text-slate-700 hover:border-indigo-400 hover:text-indigo-700'
 
+const VIEW_TREE =
+  'h-5 px-1.5 rounded text-[10px] font-medium leading-none whitespace-nowrap flex items-center gap-1 ' +
+  'text-indigo-700 bg-white/70 border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition-colors'
+
+/** A three-node hierarchy: one person above, two below. */
+export function TreeIcon({ className = 'w-3 h-3' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+      <rect x="5.5" y="1.5" width="5" height="4" rx="1" />
+      <rect x="1" y="10.5" width="5" height="4" rx="1" />
+      <rect x="10" y="10.5" width="5" height="4" rx="1" />
+      <path d="M8 5.5v2.5M3.5 10.5V8h9v2.5" />
+    </svg>
+  )
+}
+
 function EventLine({ label, text }: { label: string; text: string }) {
   return (
     <p className="text-[11px] text-slate-600 leading-4 truncate" title={text || undefined}>
@@ -80,6 +96,19 @@ function PersonNode({ data }: { data: PersonCardData }) {
             {isSpouse && <span className="text-slate-400"> · spouse{spouseCount > 1 ? ` (1 of ${spouseCount})` : ''}</span>}
           </p>
         </div>
+        {/* Sits apart from the expand buttons: it redraws the tree around this person. */}
+        {!isFocus && (
+          <button
+            type="button"
+            data-refocus
+            aria-label={`View the tree from ${individual.fullName}`}
+            title="Redraw the tree around this person"
+            className={`${VIEW_TREE} flex-shrink-0`}
+          >
+            <TreeIcon />
+            View tree
+          </button>
+        )}
       </div>
 
       <div className="mt-1.5">
@@ -105,18 +134,6 @@ function PersonNode({ data }: { data: PersonCardData }) {
           >
             <span aria-hidden>◂</span>
             {`Children (${childCount})`}
-          </button>
-        )}
-
-        {!isFocus && (
-          <button
-            type="button"
-            data-refocus
-            aria-label={`Centre the tree on ${individual.fullName}`}
-            title="Centre the tree on this person to see their own family"
-            className={`${BUTTON} ${BUTTON_CLOSED} mx-auto`}
-          >
-            Focus
           </button>
         )}
 
