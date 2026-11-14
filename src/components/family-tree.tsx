@@ -71,15 +71,18 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
 
   const [panelData, setPanelData] = useState<PanelData | null>(null)
   const focusPerson = index.byId.get(focusId)
-  const { setCenter, fitView } = useReactFlow()
+  const { setCenter, fitView, getZoom } = useReactFlow()
 
   // The layout is handed to React Flow as-is: cards are not draggable and carry
   // their own size, so there is no node state to keep. This effect only moves
   // the viewport. A toolbar action refits everything; a new root (a new focus
-  // or an explicit re-centre) eases to the focus card; a single expansion
-  // leaves the viewport alone. The first render is handled by the fitView prop.
+  // or an explicit re-centre) eases to the focus card; opening someone's
+  // children eases to that person's card at the current zoom, because the new
+  // cards shift the layout around them; opening parents leaves the viewport
+  // alone. The first render is handled by the fitView prop.
   const lastRoot = useRef<string | null>(null)
   const fitAfterLayout = useRef(false)
+  const centreAfterLayout = useRef<string | null>(null)
   useEffect(() => {
     const root = `${focusId}:${rootVersion}`
     const rootChanged = lastRoot.current !== null && lastRoot.current !== root
@@ -88,6 +91,18 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
     if (fitAfterLayout.current) {
       fitAfterLayout.current = false
       fitView({ ...FIT_VIEW_OPTIONS, duration: 400 })
+      return
+    }
+
+    const centreId = centreAfterLayout.current
+    centreAfterLayout.current = null
+    const centreNode = centreId ? layout.nodes.find(n => n.id === centreId) : undefined
+    if (centreNode) {
+      setCenter(
+        centreNode.position.x + NODE_W / 2,
+        centreNode.position.y + NODE_H / 2,
+        { zoom: getZoom(), duration: 400 },
+      )
       return
     }
     if (!rootChanged) return
@@ -100,7 +115,7 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
         { zoom: 1, duration: 400 },
       )
     }
-  }, [layout, focusId, rootVersion, setCenter, fitView])
+  }, [layout, focusId, rootVersion, setCenter, fitView, getZoom])
 
   const setFocus = useCallback((id: string) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -133,6 +148,7 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
   const expand = useCallback((side: 'up' | 'down', id: string) => {
     // Expand-only: no control hides parents or children again.
     if (expansion[side].has(id)) return
+    if (side === 'down') centreAfterLayout.current = id
     setExpansionState({ focusId, expansion: toggleExpansion(expansion, side, id) })
   }, [focusId, expansion])
 
