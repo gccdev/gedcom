@@ -77,9 +77,8 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
   // their own size, so there is no node state to keep. This effect only moves
   // the viewport. A toolbar action refits everything; a new root (a new focus
   // or an explicit re-centre) eases to the focus card; opening someone's
-  // children eases to that person's card at the current zoom, because the new
-  // cards shift the layout around them; opening parents leaves the viewport
-  // alone. The first render is handled by the fitView prop.
+  // parents or children eases to that person's card at the current zoom,
+  // because the new cards shift the layout around them. The first render is handled by the fitView prop.
   const lastRoot = useRef<string | null>(null)
   const fitAfterLayout = useRef(false)
   const centreAfterLayout = useRef<string | null>(null)
@@ -148,7 +147,7 @@ function FamilyTreeInner({ data, defaultFocusId }: FamilyTreeProps) {
   const expand = useCallback((side: 'up' | 'down', id: string) => {
     // Expand-only: no control hides parents or children again.
     if (expansion[side].has(id)) return
-    if (side === 'down') centreAfterLayout.current = id
+    centreAfterLayout.current = id
     setExpansionState({ focusId, expansion: toggleExpansion(expansion, side, id) })
   }, [focusId, expansion])
 
